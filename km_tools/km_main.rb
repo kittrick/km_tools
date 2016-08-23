@@ -1,26 +1,12 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2
+# Version: 1.2.1
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
 
 require 'sketchup.rb'
 module KM_Tools
-
-	#----------------------------------------------------------------------------------------#
-	# Global Methods
-	#----------------------------------------------------------------------------------------#
-	def pbcopy(input)
-		str = input.to_s
-		IO.popen('pbcopy', 'w') { |f| f << str }
-		str
-	end
-	def set_cursor(url , x=0, y=0)
-		cursor_path = Sketchup.find_support_file(url, "Plugins/#{$KM_folder}/Resources/images/")
-		@km_object_info_cursor = UI.create_cursor(cursor_path, x, y)
-		UI.set_cursor(@km_object_info_cursor)
-	end
 
 	module Menu
 		unless file_loaded?(__FILE__)
@@ -44,7 +30,26 @@ module KM_Tools
 		end
 	end #Menu
 
+	class Helper
+		#----------------------------------------------------------------------------------------#
+		# Global Methods
+		#----------------------------------------------------------------------------------------#
+		def pbcopy(input)
+			str = input.to_s
+			IO.popen('pbcopy', 'w') { |f| f << str }
+			str
+		end
+		def set_cursor(url , x=0, y=0)
+			cursor_path = Sketchup.find_support_file(url, "Plugins/#{$KM_folder}/Resources/images/")
+			@km_object_info_cursor = UI.create_cursor(cursor_path, x, y)
+			UI.set_cursor(@km_object_info_cursor)
+		end
+	end #Helpers
+
 	class KM_Dimension_Tool
+		#----------------------------------------------------------------------------------------#
+		# A window that allows the user to set an objects absolute dimensions
+		#----------------------------------------------------------------------------------------#
 		def set_dims(width, depth, height, object)
 			# prompts = ['Width:', 'Depth:', 'Height:']
 			# defaults = [width.to_s, depth.to_s, height.to_s]
@@ -60,12 +65,13 @@ module KM_Tools
 		end
 		def activate
 			Sketchup.set_status_text 'KM_Object Info: Activated', SB_PROMPT
+			@helper = Helper.new
       	end
       	def deactivate(view)
       		Sketchup.set_status_text 'KM_Object Info: Deactivated', SB_PROMPT
       	end
       	def onSetCursor
-      		set_cursor('km_dim_tool_24.png')
+      		@helper.set_cursor('km_dim_tool_24.png')
       	end
       	def onLButtonUp(flags, x, y, view)
 			ph = view.pick_helper
@@ -98,7 +104,7 @@ module KM_Tools
 		      		messageString += "\n\nCopy dimensions to clipboard?"
 		      		result = UI.messagebox messageString, MB_OKCANCEL
 		      		if result == IDOK
-		      			pbcopy(dimString)
+		      			helper.pbcopy(dimString)
 		      			Sketchup.set_status_text 'KM_Object Info: Dimensions copied to clipboard.', SB_PROMPT
 		      		else
 		      			Sketchup.set_status_text 'KM_Object Info: Dimensions not copied to clipboard.', SB_PROMPT
@@ -112,9 +118,9 @@ module KM_Tools
 			entities = ph.all_picked
 			if entities.length > 0
 	      		if flags == 1048840
-	      			set_cursor('km_dim_info_24.png')
+	      			@helper.set_cursor('km_dim_info_24.png')
 	  			else
-	  				set_cursor('km_dim_plus_24.png')
+	  				@helper.set_cursor('km_dim_plus_24.png')
 	  			end
 				messageString, dimString = '', ''
 	      		(entities).each do |i|
@@ -135,7 +141,7 @@ module KM_Tools
       	end
       	def onKeyDown(key, repeat, flags, view)
       		if key = VK_COMMAND
-  				set_cursor('km_dim_info_24.png')
+  				@helper.set_cursor('km_dim_info_24.png')
       		end
       	end
 	end
