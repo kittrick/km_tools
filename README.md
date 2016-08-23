@@ -11,6 +11,10 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.2.3
+	Cleaned up helper functions
+	Added model update listener, currently a work in progress
+	Added selection info to the entity info window
 ### Version 1.2.2
     Changed the functionality from a tool to an information window.
     Added HTML and CSS files for information window, not currently hooked up to Sketchup Data.

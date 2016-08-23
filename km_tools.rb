@@ -2,7 +2,7 @@
 ### Credits:
 # Developed by Kit MacAllister
 #
-### Version: 1.2.2
+### Version: 1.2.3
 #
 ### License:
 # Copyright (c) 2016 Kit MacAllister
@@ -64,4 +64,4 @@ module KM_Tools
 		}
 	end #def
 
-end #Module KMTools
+end #Module KMTools 

@@ -1,11 +1,22 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.2
+# Version: 1.2.3
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
 
 require 'sketchup.rb'
+# This is an example of an observer that watches the
+# component placement event.
+class ModelUpdate < Sketchup::ModelObserver
+	def onTransactionCommit(model)
+		KM_Tools::Entity_Dimensions.get_object_info
+	end
+end
+
+# Attach the observer.
+Sketchup.active_model.add_observer(ModelUpdate.new)
+
 module KM_Tools
 
 	class Menu
@@ -43,16 +54,15 @@ module KM_Tools
 			str
 		end #pbcopy
 		
-		def get_file(file)
-			return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/")
-		end #get_file
-
-		def get_html(file)
-			return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/html/")
-		end #get_file
-		
-		def get_image(file)
-			return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/images/")
+		def get_file(file, type = '')
+			case type
+				when 'html'
+					return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/html/")
+				when 'image'
+					return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/images/")
+				else
+					return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/")
+			end
 		end #get_file
 		
 		def set_cursor(url , x=0, y=0)
@@ -65,13 +75,13 @@ module KM_Tools
 
 	class Entity_Dimensions
 		
+		#Class Vars
+		@@info_window_open = false
+		
 		def initialize
 			@helper = Helper.new
-		end #initialize
-
-		def info_window
 			# Create the WebDialog instance
-			my_dialog = UI::WebDialog.new("Entity Dimensions", false, "Selection Info", 240, 210, 200, 200, false)
+			@my_dialog = UI::WebDialog.new("Entity Dimensions", false, "Selection Info", 240, 210, 200, 200, false)
 
 			# Attach an action callback
 			# my_dialog.add_action_callback("get_data") do |web_dialog,action_name|
@@ -80,8 +90,42 @@ module KM_Tools
 
 			# Find and show our html file
 			html_path = @helper.get_html('km_entity_dimensions.html')
-			my_dialog.set_file(html_path)
-			my_dialog.show_modal()
+			@my_dialog.set_file(html_path)
+			@my_dialog.set_on_close{
+				@@info_window_open = false
+			}
+		end #initialize
+
+		def get_object_info(target = @my_dialog)
+			selection = Sketchup.active_model.selection.first
+			unless defined? selection.name
+				entity_name = selection.name
+			else
+				entity_name = selection.typename
+			end
+			entity_width = selection.bounds.width.to_s
+			entity_depth = selection.bounds.depth.to_s
+			entity_height = selection.bounds.height.to_s
+			entity_x = selection.transformation.origin[0].to_s
+			entity_y = selection.transformation.origin[1].to_s
+			entity_z = selection.transformation.origin[2].to_s
+			js_command = "document.getElementById('entity_name').innerHTML = '#{entity_name}';"
+			js_command += "document.getElementById('width').setAttribute('value','#{entity_width}');"
+			js_command += "document.getElementById('depth').setAttribute('value','#{entity_depth}');"
+			js_command += "document.getElementById('height').setAttribute('value','#{entity_height}');"
+			js_command += "document.getElementById('x').setAttribute('value','#{entity_x}');"
+			js_command += "document.getElementById('y').setAttribute('value','#{entity_y}');"
+			js_command += "document.getElementById('z').setAttribute('value','#{entity_z}');"
+			target.execute_script(js_command)
+		end #get_object_info
+
+		def info_window
+			if !@@info_window_open
+				@my_dialog.show_modal(){
+					@@info_window_open = true
+					get_object_info(@my_dialog)
+				}
+			end
 		end #info_window
 
 	end #Entity_Dimensions
