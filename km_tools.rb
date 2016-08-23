@@ -2,7 +2,7 @@
 ### Credits:
 # Developed by Kit MacAllister
 #
-### Version: 1.2.1
+### Version: 1.2.2
 #
 ### License:
 # Copyright (c) 2016 Kit MacAllister
@@ -32,7 +32,7 @@ require 'extensions.rb'
 module KM_Tools
 
 	@name = 'KM_Tools'
-	@version = '1.2.1'
+	@version = '1.2.2'
 	$KM_folder = 'km_tools'
 	@sdate = '08/23/2016'
 	@creator = 'Kit MacAllister'

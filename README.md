@@ -11,11 +11,14 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
-###Version 1.2.1
+### Version 1.2.2
+    Changed the functionality from a tool to an information window.
+    Added HTML and CSS files for information window, not currently hooked up to Sketchup Data.
+### Version 1.2.1
     Added a new helper class and fixed a bug with cursor icons.
-###Version 1.2
+### Version 1.2
     Updated License Information and cleaned up folder structure. Added to github.
-###Version 1.1
+### Version 1.1
     Bare bones of the plugin, added toolbar and menu functionality, cleaned up the code a
     bit. I'm still new to ruby and I have to figure out how this plugin will actually
     interact with the UI and the model. The goal is to create a tool that will allow the user

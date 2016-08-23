@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.1
+# Version: 1.2.2
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -8,142 +8,82 @@
 require 'sketchup.rb'
 module KM_Tools
 
-	module Menu
-		unless file_loaded?(__FILE__)
+	class Menu
+		def initialize
 			#----------------------------------------------------------------------------------------#
-			@menu = UI.menu('Plugins').add_submenu('KM_Tools')
+			@menu = UI.menu('Window').add_submenu('KM_Tools')
 			@toolbar = UI::Toolbar.new('KM Tools')
-			command1 = UI::Command.new('KM Dimension Tool'){
-				unless defined? km_object_info_command
-					km_dim_tool = KM_Dimension_Tool.new
-					Sketchup.active_model.select_tool(km_dim_tool)
-				end
+			command1 = UI::Command.new('Entity Dimensions'){
+				@entity_dimensions = Entity_Dimensions.new
+				@entity_dimensions.info_window
 			}
 			command1.small_icon = 'Resources/Images/km_dim_tool_24.png'
 			command1.large_icon = 'Resources/Images/km_dim_tool_54.png'
-			command1.tooltip = 'Object Dimension Tool'
-			command1.status_bar_text = 'Object Dimension Tool'
-			command1.menu_text = 'Object Dimension Tool'
+			command1.tooltip = 'Entity Dimensions'
+			command1.status_bar_text = 'Entity Dimensions'
+			command1.menu_text = 'Entity Dimensions'
 			@toolbar.add_item(command1)
 			@menu.add_item(command1)
 			#----------------------------------------------------------------------------------------#
 		end
 	end #Menu
 
+	#Initialize Menu
+	menu = Menu.new
+
 	class Helper
+		
 		#----------------------------------------------------------------------------------------#
 		# Global Methods
 		#----------------------------------------------------------------------------------------#
+		
 		def pbcopy(input)
 			str = input.to_s
 			IO.popen('pbcopy', 'w') { |f| f << str }
 			str
-		end
+		end #pbcopy
+		
+		def get_file(file)
+			return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/")
+		end #get_file
+
+		def get_html(file)
+			return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/html/")
+		end #get_file
+		
+		def get_image(file)
+			return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/images/")
+		end #get_file
+		
 		def set_cursor(url , x=0, y=0)
-			cursor_path = Sketchup.find_support_file(url, "Plugins/#{$KM_folder}/Resources/images/")
+			cursor_path = get_image(url)
 			@km_object_info_cursor = UI.create_cursor(cursor_path, x, y)
 			UI.set_cursor(@km_object_info_cursor)
-		end
+		end #set_cursor
+
 	end #Helpers
 
-	class KM_Dimension_Tool
-		#----------------------------------------------------------------------------------------#
-		# A window that allows the user to set an objects absolute dimensions
-		#----------------------------------------------------------------------------------------#
-		def set_dims(width, depth, height, object)
-			# prompts = ['Width:', 'Depth:', 'Height:']
-			# defaults = [width.to_s, depth.to_s, height.to_s]
-			# input = UI.inputbox(prompts, defaults, 'Set Object Dimensions:')
-			# xscale = input[0].to_f / width.to_f
-			# yscale = input[1].to_f / depth.to_f
-			# zscale = input[2].to_f / height.to_f
-			# scale = Geom::Transformation.scaling xscale, yscale, zscale
-			# object.transform!(scale)
-			dlg = UI::WebDialog.new("ObjectDimensions", true, "ObjectDimensions", 739, 641, 150, 150, true);
-			dlg.set_url Sketchup.find_support_file("km_scale_tool.html", "Plugins/#{$KM_folder}/Resources/")
-			dlg.show
-		end
-		def activate
-			Sketchup.set_status_text 'KM_Object Info: Activated', SB_PROMPT
+	class Entity_Dimensions
+		
+		def initialize
 			@helper = Helper.new
-      	end
-      	def deactivate(view)
-      		Sketchup.set_status_text 'KM_Object Info: Deactivated', SB_PROMPT
-      	end
-      	def onSetCursor
-      		@helper.set_cursor('km_dim_tool_24.png')
-      	end
-      	def onLButtonUp(flags, x, y, view)
-			ph = view.pick_helper
-			ph.do_pick(x, y)
-			entities = ph.all_picked
-			if flags != 1048840
-				if entities.length > 0
-					(entities).each do |i|
-						if(defined? i.bounds)
-		      				@width, @depth, @height = i.bounds.width, i.bounds.depth, i.bounds.height
-		      			end
-		      			@object = i
-	      			end
-					set_dims(@width, @depth, @height, @object)
-				end
-			else
-				if entities.length > 0
-					messageString, dimString = '', ''
-		      		(entities).each do |i|
-		      			if (defined? i.name) && (i.name.length > 0)
-							messageString += "#{i.name}\n\t"
-						else
-							messageString += "#{i.typename}\n\t"
-						end
-						if(defined? i.bounds)
-			      			dimString += "#{i.bounds.width.to_s}Wx#{i.bounds.depth.to_s}Dx#{i.bounds.height.to_s}H"
-			      		end
-		      			messageString += dimString
-		      		end
-		      		messageString += "\n\nCopy dimensions to clipboard?"
-		      		result = UI.messagebox messageString, MB_OKCANCEL
-		      		if result == IDOK
-		      			helper.pbcopy(dimString)
-		      			Sketchup.set_status_text 'KM_Object Info: Dimensions copied to clipboard.', SB_PROMPT
-		      		else
-		      			Sketchup.set_status_text 'KM_Object Info: Dimensions not copied to clipboard.', SB_PROMPT
-		      		end
-		      	end
-			end
-      	end
-      	def onMouseMove(flags, x, y, view)
-			ph = view.pick_helper
-			ph.do_pick(x, y)
-			entities = ph.all_picked
-			if entities.length > 0
-	      		if flags == 1048840
-	      			@helper.set_cursor('km_dim_info_24.png')
-	  			else
-	  				@helper.set_cursor('km_dim_plus_24.png')
-	  			end
-				messageString, dimString = '', ''
-	      		(entities).each do |i|
-	      			if (defined? i.name) && (i.name.length > 0)
-						messageString += "#{i.name}: "
-					else
-						messageString += "#{i.typename}: "
-					end
-					if(defined? i.bounds)
-	      				dimString += "#{i.bounds.width.to_s}Wx#{i.bounds.depth.to_s}Dx#{i.bounds.height.to_s}H"
-	      			end
-	      			messageString += dimString
-	      		end
-	      		Sketchup.set_status_text messageString, SB_PROMPT
-	      	else
-	      		Sketchup.set_status_text "KM_Object Info: No entities detected.", SB_PROMPT
-	      	end
-      	end
-      	def onKeyDown(key, repeat, flags, view)
-      		if key = VK_COMMAND
-  				@helper.set_cursor('km_dim_info_24.png')
-      		end
-      	end
-	end
+		end #initialize
+
+		def info_window
+			# Create the WebDialog instance
+			my_dialog = UI::WebDialog.new("Entity Dimensions", false, "Selection Info", 240, 210, 200, 200, false)
+
+			# Attach an action callback
+			# my_dialog.add_action_callback("get_data") do |web_dialog,action_name|
+			# UI.messagebox("Ruby says: Your javascript has asked for " + action_name.to_s)
+			# end
+
+			# Find and show our html file
+			html_path = @helper.get_html('km_entity_dimensions.html')
+			my_dialog.set_file(html_path)
+			my_dialog.show_modal()
+		end #info_window
+
+	end #Entity_Dimensions
+
 end #KMTools
-file_loaded(__FILE__)
