@@ -1,10 +1,27 @@
-# =begin
-#
-# Copyright 2016, Kit MacAllister
-#
-# =end
+#----------------------------------------------------------------------------------------#
+# 
+# Version: 1.2
+# Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
+# 
+#----------------------------------------------------------------------------------------#
+
 require 'sketchup.rb'
 module KM_Tools
+
+	#----------------------------------------------------------------------------------------#
+	# Global Methods
+	#----------------------------------------------------------------------------------------#
+	def pbcopy(input)
+		str = input.to_s
+		IO.popen('pbcopy', 'w') { |f| f << str }
+		str
+	end
+	def set_cursor(url , x=0, y=0)
+		cursor_path = Sketchup.find_support_file(url, "Plugins/#{$KM_folder}/Resources/images/")
+		@km_object_info_cursor = UI.create_cursor(cursor_path, x, y)
+		UI.set_cursor(@km_object_info_cursor)
+	end
+
 	module Menu
 		unless file_loaded?(__FILE__)
 			#----------------------------------------------------------------------------------------#
