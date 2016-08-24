@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------
 // 
-// Version: 1.2.5
+// Version: 1.2.6
 // Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 // 
 //----------------------------------------------------------------------------------------
@@ -21,13 +21,24 @@ reset_z = '#Undefined';
 // Reset Dimensions Function
 function resetDimensions(event){
 	event.preventDefault();
+
+	// Reset Variables
+	reset_entity_name = document.getElementById('entity_name').getAttribute('data-name');
+	reset_width = document.getElementById('width').getAttribute('data-width');
+	reset_depth = document.getElementById('depth').getAttribute('data-depth');
+	reset_height = document.getElementById('height').getAttribute('data-height');
+	reset_x = document.getElementById('x').getAttribute('data-x');
+	reset_y = document.getElementById('y').getAttribute('data-y');
+	reset_z = document.getElementById('z').getAttribute('data-z');
+	
+	// Reset Values
 	document.getElementById('entity_name').innerHTML = reset_entity_name;
-	document.getElementById('width').setAttribute('value', reset_width);
-	document.getElementById('depth').setAttribute('value', reset_depth);
-	document.getElementById('height').setAttribute('value', reset_height);
-	document.getElementById('x').setAttribute('value', reset_x);
-	document.getElementById('y').setAttribute('value', reset_y);
-	document.getElementById('z').setAttribute('value', reset_z);
+	document.getElementById('width').value = reset_width; 
+	document.getElementById('depth').value = reset_depth;
+	document.getElementById('height').value = reset_height;
+	document.getElementById('x').value = reset_x;
+	document.getElementById('y').value = reset_y;
+	document.getElementById('z').value = reset_z;
 }
 
 // Apply Dimensions Function

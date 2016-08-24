@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.5
+# Version: 1.2.6
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -15,6 +15,15 @@ module KM_Tools
 			@tool = tool
 		end
 		def onTransactionCommit(selection)
+			@tool.get_object_info
+		end
+	end
+	class SelectionUpdate < Sketchup::SelectionObserver
+		def initialize(tool)
+			@tool = tool
+		end
+
+		def onSelectionBulkChange(selection)
 			@tool.get_object_info
 		end
 	end
@@ -49,19 +58,16 @@ module KM_Tools
 			# Create the WebDialog instance
 			@@info_window_open = false
 
-			# Attach an action callback
-			# my_dialog.add_action_callback("get_data") do |web_dialog,action_name|
-			# UI.messagebox("Ruby says: Your javascript has asked for " + action_name.to_s)
-			# end
-
 			# Find and show our html file
 			html_path = get_file('km_entity_dimensions.html', 'html')
 			@@my_dialog.set_file(html_path)
 			@@my_dialog.set_on_close{
 				@@info_window_open = false
 			}
-			observer = ModelUpdate.new(self)
-		    Sketchup.active_model.add_observer(observer)
+			updateObserver = ModelUpdate.new(self)
+		    Sketchup.active_model.add_observer(updateObserver)
+		    selectionObserver = SelectionUpdate.new(self)
+    		Sketchup.active_model.selection.add_observer(selectionObserver)
 
 		end #initialize
 
@@ -74,14 +80,18 @@ module KM_Tools
 			else
 				entity_name = selection.typename
 			end
-			js_command = "document.getElementById('entity_name').innerHTML = '#{entity_name}'; var reset_entity_name = '#{entity_name}';"
+			js_command = "document.getElementById('entity_name').innerHTML = '#{entity_name}';"
+			js_command += "document.getElementById('entity_name').setAttribute('data-name','#{entity_name}');"
 
 			entity_width = selection.bounds.width.to_s
 			entity_depth = selection.bounds.depth.to_s
 			entity_height = selection.bounds.height.to_s
-			js_command += "document.getElementById('width').setAttribute('value','#{entity_width}'); var reset_width = '#{entity_width}';"
-			js_command += "document.getElementById('depth').setAttribute('value','#{entity_depth}'); var reset_depth = '#{entity_depth}';"
-			js_command += "document.getElementById('height').setAttribute('value','#{entity_height}'); var reset_height = '#{entity_height}';"
+			js_command += "document.getElementById('width').value = '#{entity_width}';"
+			js_command += "document.getElementById('width').setAttribute('data-width','#{entity_width}');"
+			js_command += "document.getElementById('depth').value = '#{entity_depth}';"
+			js_command += "document.getElementById('depth').setAttribute('data-depth','#{entity_depth}');"
+			js_command += "document.getElementById('height').value = '#{entity_height}';"
+			js_command += "document.getElementById('height').setAttribute('data-height','#{entity_height}');"
 
 			if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
 				entity_x = selection.transformation.origin[0].to_s
@@ -92,9 +102,12 @@ module KM_Tools
 				entity_y = 0
 				entity_z = 0
 			end
-			js_command += "document.getElementById('x').setAttribute('value','#{entity_x}'); var reset_x = '#{entity_x}';"
-			js_command += "document.getElementById('y').setAttribute('value','#{entity_y}'); var reset_y = '#{entity_y}';"
-			js_command += "document.getElementById('z').setAttribute('value','#{entity_z}'); var reset_z = '#{entity_z}';"
+			js_command += "document.getElementById('x').value = '#{entity_x}';"
+			js_command += "document.getElementById('x').setAttribute('data-x','#{entity_x}');"
+			js_command += "document.getElementById('y').value = '#{entity_y}';"
+			js_command += "document.getElementById('y').setAttribute('data-y','#{entity_y}');"
+			js_command += "document.getElementById('z').value = '#{entity_z}';"
+			js_command += "document.getElementById('z').setAttribute('data-z','#{entity_z}');"
 			@@my_dialog.execute_script(js_command)
 		end #get_object_info
 
