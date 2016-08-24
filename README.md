@@ -11,6 +11,8 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.2.4
+	Cleaned up the main logic functions, still wrapping my head around ruby and sketchup.
 ### Version 1.2.3
 	Cleaned up helper functions
 	Added model update listener, currently a work in progress

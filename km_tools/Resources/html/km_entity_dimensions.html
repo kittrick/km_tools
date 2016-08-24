@@ -1,6 +1,6 @@
 <!----------------------------------------------------------------------------------------
 # 
-# Version: 1.2.3
+# Version: 1.2.4
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #---------------------------------------------------------------------------------------->
@@ -12,7 +12,7 @@
 	</head>
 	<body class="entity_dimensions">
 		<h1 id="entity_name">Entity Name</h1>
-		<form name="">
+		<form name="info_form" id="info_form">
 			<label for="width">Width:</label>
 			<input name="width" id="width" value="">
 			<label for="depth">Depth:</label>
@@ -25,8 +25,9 @@
 			<input name="y" id="y" value="">
 			<label for="z">Z Position:</label>
 			<input name="z" id="z" value="">
-			<button name="reset">Reset</button>
-			<button name="update">Apply</button>
+			<button name="reset" id="reset">Reset</button>
+			<button name="apply" id="apply">Apply</button>
 		</form>
+		<script type="text/javascript" src="../js/scripts.js"></script>
 	</body>
 </html>
