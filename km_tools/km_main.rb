@@ -1,39 +1,42 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.4
+# Version: 1.2.5
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
 
 require 'sketchup.rb'
 
-# This is an example of an observer that watches the
-# component placement event.
-class ModelUpdate < Sketchup::ModelObserver
-	def onTransactionCommit(model)
-		puts 'changed'
-	end
-end
-
-# Attach the observer.
-Sketchup.active_model.add_observer(ModelUpdate.new)
-
 module KM_Tools
 
+	#Update on Model Change
+	class ModelUpdate < Sketchup::ModelObserver
+		def initialize(tool)
+			@tool = tool
+		end
+		def onTransactionCommit(selection)
+			@tool.get_object_info
+		end
+	end
+
 	#----------------------------------------------------------------------------------------#
 	# 
-	# This Class Adds Menu Items
+	# Dimension Tool Class, now all together! Working Much much better!
 	# 
 	#----------------------------------------------------------------------------------------#
-	class Menu
+	class Dimension_Tool
+		
+		@@info_window_open = false
+		@@my_dialog = UI::WebDialog.new("Entity Dimensions", false, "Selection Info", 240, 210, 200, 200, false)
+
 		def initialize
+			#----------------------------------------------------------------------------------------#
+			# Menu Window Commands
 			#----------------------------------------------------------------------------------------#
 			ui_menu = UI.menu('Window').add_submenu('KM_Tools')
 			ui_toolbar = UI::Toolbar.new('KM Tools')
 			command1 = UI::Command.new('Entity_Dimensions'){
-				#This Command Opens the Entity Info Window
-				entity_dimensions = Entity_Dimensions.new
-				entity_dimensions.display_info_window
+				display_info_window
 			}
 			command1.small_icon = 'Resources/Images/km_dim_tool_24.png'
 			command1.large_icon = 'Resources/Images/km_dim_tool_54.png'
@@ -43,26 +46,8 @@ module KM_Tools
 			ui_toolbar.add_item(command1)
 			ui_menu.add_item(command1)
 			#----------------------------------------------------------------------------------------#
-		end
-	end #Menu
-
-	#Intitialize Menu
-	menu = Menu.new
-
-	#----------------------------------------------------------------------------------------#
-	# 
-	# This Class Handles most of the logic and the Info Window
-	# 
-	#----------------------------------------------------------------------------------------#
-	class Entity_Dimensions
-
-		@@info_window_open = false
-		
-		def initialize
-			@helper = Helper.new
 			# Create the WebDialog instance
-			@my_dialog = UI::WebDialog.new("Entity Dimensions", false, "Selection Info", 240, 210, 200, 200, false)
-			$info_window_open = false
+			@@info_window_open = false
 
 			# Attach an action callback
 			# my_dialog.add_action_callback("get_data") do |web_dialog,action_name|
@@ -70,14 +55,17 @@ module KM_Tools
 			# end
 
 			# Find and show our html file
-			html_path = @helper.get_file('km_entity_dimensions.html', 'html')
-			@my_dialog.set_file(html_path)
-			@my_dialog.set_on_close{
+			html_path = get_file('km_entity_dimensions.html', 'html')
+			@@my_dialog.set_file(html_path)
+			@@my_dialog.set_on_close{
 				@@info_window_open = false
 			}
+			observer = ModelUpdate.new(self)
+		    Sketchup.active_model.add_observer(observer)
+
 		end #initialize
 
-		def get_object_info(dialog)
+		def get_object_info
 			selection = Sketchup.active_model.selection.first
 			if !defined? selection.name.length && selection.name.length > 0
 				entity_name = selection.name
@@ -99,32 +87,21 @@ module KM_Tools
 				entity_x = selection.transformation.origin[0].to_s
 				entity_y = selection.transformation.origin[1].to_s
 				entity_z = selection.transformation.origin[2].to_s
-				js_command += "document.getElementById('x').setAttribute('value','#{entity_x}'); var reset_x = '#{entity_x}';"
-				js_command += "document.getElementById('y').setAttribute('value','#{entity_y}'); var reset_y = '#{entity_y}';"
-				js_command += "document.getElementById('z').setAttribute('value','#{entity_z}'); var reset_z = '#{entity_z}';"
+			else
+				entity_x = 0
+				entity_y = 0
+				entity_z = 0
 			end
-			dialog.execute_script(js_command)
+			js_command += "document.getElementById('x').setAttribute('value','#{entity_x}'); var reset_x = '#{entity_x}';"
+			js_command += "document.getElementById('y').setAttribute('value','#{entity_y}'); var reset_y = '#{entity_y}';"
+			js_command += "document.getElementById('z').setAttribute('value','#{entity_z}'); var reset_z = '#{entity_z}';"
+			@@my_dialog.execute_script(js_command)
 		end #get_object_info
 
 		def display_info_window
-			if !@@info_window_open
-				@my_dialog.show_modal(){
-					@@info_window_open = true
-					get_object_info(@my_dialog)
-				}
-			else
-				get_object_info(@my_dialog)
-			end
-		end #info_window
-
-	end #Entity_Dimensions
-
-	#----------------------------------------------------------------------------------------#
-	# 
-	# This Class contains Helper Functions
-	# 
-	#----------------------------------------------------------------------------------------#
-	class Helper
+			@@my_dialog.show_modal
+			get_object_info
+		end #display_info_window
 
 		# Copies Text to the Clipboard (OSX)
 		def pbcopy(input)
@@ -152,7 +129,8 @@ module KM_Tools
 			UI.set_cursor(@km_object_info_cursor)
 		end #set_cursor
 
-	end #Helper
+	end #Dimension_Tool
+	dimension_tool = Dimension_Tool.new
 
 end #KMTools
 file_loaded(__FILE__)

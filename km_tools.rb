@@ -2,7 +2,7 @@
 ### Credits:
 # Developed by Kit MacAllister
 #
-### Version: 1.2.4
+### Version: 1.2.5
 #
 ### License:
 # Copyright (c) 2016 Kit MacAllister
@@ -31,12 +31,12 @@ require 'extensions.rb'
 
 module KM_Tools
 
-	@name = 'KM_Tools'
-	@version = '1.2.4'
+	name = 'KM_Tools'
+	version = '1.2.4'
 	$KM_folder = 'km_tools'
-	@sdate = '08/23/2016'
-	@creator = 'Kit MacAllister'
-	@description = 'Assorted Sketchup Tools Created by Kit MacAllister'
+	sdate = '08/23/2016'
+	creator = 'Kit MacAllister'
+	description = 'Assorted Sketchup Tools Created by Kit MacAllister'
 
 	file__ = __FILE__
 	file__ = file__.force_encoding('UTF-8') if defined?(Encoding)
@@ -44,23 +44,23 @@ module KM_Tools
 
 	path = File.join(File.dirname(file__), $KM_folder, "km_main.rb") 
 	ext = SketchupExtension.new('KM_Tools', path) 
-	ext.creator = @creator 
-	ext.version = @version + ' - ' + @sdate 
-	ext.copyright = 'MIT Open Source - ' + @creator + ' - © 2016' 
-	ext.description = @description
+	ext.creator = creator 
+	ext.version = version + ' - ' + sdate 
+	ext.copyright = 'MIT Open Source - ' + creator + ' - © 2016' 
+	ext.description = description
 	Sketchup.register_extension ext, true
 
-	def KM_Tools.get_name ; @name ; end
-	def KM_Tools.get_date ; @sdate ; end
-	def KM_Tools.get_version ; @version ; end
+	def KM_Tools.get_name ; name ; end
+	def KM_Tools.get_date ; sdate ; end
+	def KM_Tools.get_version ; version ; end
 
 	def KM_Tools.register_plugin_for_KMTools 
 		{	
-			:name => @name,
-			:author => @creator,
-			:version => @version,
-			:date => @sdate,	
-			:description => @description,
+			:name => name,
+			:author => creator,
+			:version => version,
+			:date => sdate,	
+			:description => description,
 		}
 	end #def
 

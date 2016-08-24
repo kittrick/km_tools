@@ -11,6 +11,9 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.2.5
+	Combined the Menu and Entity Dimension classes which solves a lot of my variable issues!
+	The info window now updates when an entity is moved or scaled!
 ### Version 1.2.4
 	Cleaned up the main logic functions, still wrapping my head around ruby and sketchup.
 ### Version 1.2.3
