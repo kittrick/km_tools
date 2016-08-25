@@ -11,6 +11,10 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.2.7
+	Big updates in how the html window is written, much more flexible.
+	The HTML window now parses inch and foot data when the user enters input.
+	Sketchup now receives JSON data from the apply button, although it doesn't yet take action.
 ### Version 1.2.6
 	Made the "Reset" button work good!
 ### Version 1.2.5

@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.6
+# Version: 1.2.7
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -8,6 +8,12 @@
 require 'sketchup.rb'
 
 module KM_Tools
+
+	#----------------------------------------------------------------------------------------#
+	# 
+	# These are event listeners that trigger updates.
+	# 
+	#----------------------------------------------------------------------------------------#
 
 	#Update on Model Change
 	class ModelUpdate < Sketchup::ModelObserver
@@ -64,6 +70,9 @@ module KM_Tools
 			@@my_dialog.set_on_close{
 				@@info_window_open = false
 			}
+			@@my_dialog.add_action_callback("get_data") do |web_dialog, data|
+				puts data
+			end
 			updateObserver = ModelUpdate.new(self)
 		    Sketchup.active_model.add_observer(updateObserver)
 		    selectionObserver = SelectionUpdate.new(self)
@@ -71,57 +80,85 @@ module KM_Tools
 
 		end #initialize
 
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This Updates the info window
+		# 
+		#----------------------------------------------------------------------------------------#
 		def get_object_info
+			
+			# Get Selection
 			selection = Sketchup.active_model.selection.first
-			if !defined? selection.name.length && selection.name.length > 0
-				entity_name = selection.name
-			elsif !defined? selection.definition && selection.definition.length > 0
-				entity_name = selection.definition
+			css = get_file('Resources/css/styles.css')
+			js = get_file('Resources/js/scripts.js')
+
+			# Start HTML
+			html = %Q{
+				<!html lang="en">
+				<head>
+					<title>Entity Dimensions</title>
+					<meta charset="utf8" />
+					<link rel="stylesheet" type="text/css" href="#{css}">
+				</head>
+				<body class="entity_dimensions">
+			}
+			# Get Element Name
+			unless defined? selection.typename
+				name = "Select at least one object."
 			else
-				entity_name = selection.typename
+				name = selection.typename
 			end
-			js_command = "document.getElementById('entity_name').innerHTML = '#{entity_name}';"
-			js_command += "document.getElementById('entity_name').setAttribute('data-name','#{entity_name}');"
+			html += %Q{<h1 id="name" data-name="#{name}">#{name}</h1>}
+			html += %Q{<form name="info_form" id="info_form">}
 
-			entity_width = selection.bounds.width.to_s
-			entity_depth = selection.bounds.depth.to_s
-			entity_height = selection.bounds.height.to_s
-			js_command += "document.getElementById('width').value = '#{entity_width}';"
-			js_command += "document.getElementById('width').setAttribute('data-width','#{entity_width}');"
-			js_command += "document.getElementById('depth').value = '#{entity_depth}';"
-			js_command += "document.getElementById('depth').setAttribute('data-depth','#{entity_depth}');"
-			js_command += "document.getElementById('height').value = '#{entity_height}';"
-			js_command += "document.getElementById('height').setAttribute('data-height','#{entity_height}');"
+			# Get Bounding Box Dimensions
+			html += html_input('width',selection.bounds.width.to_s)
+			html += html_input('depth',selection.bounds.depth.to_s)
+			html += html_input('height',selection.bounds.height.to_s)
 
+			# Get x, y ,z Coordinates
 			if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
-				entity_x = selection.transformation.origin[0].to_s
-				entity_y = selection.transformation.origin[1].to_s
-				entity_z = selection.transformation.origin[2].to_s
-			else
-				entity_x = 0
-				entity_y = 0
-				entity_z = 0
+				html += html_input('x',selection.transformation.origin[0].to_s)
+				html += html_input('y',selection.transformation.origin[1].to_s)
+				html += html_input('z',selection.transformation.origin[2].to_s)
 			end
-			js_command += "document.getElementById('x').value = '#{entity_x}';"
-			js_command += "document.getElementById('x').setAttribute('data-x','#{entity_x}');"
-			js_command += "document.getElementById('y').value = '#{entity_y}';"
-			js_command += "document.getElementById('y').setAttribute('data-y','#{entity_y}');"
-			js_command += "document.getElementById('z').value = '#{entity_z}';"
-			js_command += "document.getElementById('z').setAttribute('data-z','#{entity_z}');"
-			@@my_dialog.execute_script(js_command)
+			html += %Q{<button name="reset" id="reset">Reset</button><button name="apply" id="apply">Apply</button></form>}
+			html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
+			@@my_dialog.set_html(html)
+
 		end #get_object_info
 
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This updates the info Window
+		# 
+		#----------------------------------------------------------------------------------------#
 		def display_info_window
 			@@my_dialog.show_modal
 			get_object_info
 		end #display_info_window
 
+		#----------------------------------------------------------------------------------------#
+		# 
+		# The following Methods are helpers and shortcuts.
+		# 
+		#----------------------------------------------------------------------------------------#
 		# Copies Text to the Clipboard (OSX)
 		def pbcopy(input)
 			str = input.to_s
 			IO.popen('pbcopy', 'w') { |f| f << str }
 			str
 		end #pbcopy
+
+		# Returns an HTML Label and Input field as a String
+		def html_input(name, value)
+			value.sub!('"','&quot;')
+			html = %Q{
+				<label for="#{name}">#{name.capitalize}:</label>
+				<input name="#{name}" id="#{name}" value="#{value}" data-#{name}="#{value}"/>
+			}
+			return html
+		end
 		
 		# Fetches Files
 		def get_file(file, type = '')

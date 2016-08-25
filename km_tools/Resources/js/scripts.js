@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------
 // 
-// Version: 1.2.6
+// Version: 1.2.7
 // Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 // 
 //----------------------------------------------------------------------------------------
@@ -8,22 +8,17 @@
 // Button Actions
 document.getElementById('reset').addEventListener('click',resetDimensions);
 document.getElementById('apply').addEventListener('click',applyDimensions);
-
-// Set Default Vars so I know when things aren't working
-reset_entity_name = '#Undefined';
-reset_width = '#Undefined';
-reset_depth = '#Undefined';
-reset_height = '#Undefined';
-reset_x = '#Undefined';
-reset_y = '#Undefined';
-reset_z = '#Undefined';
+inputs = document.getElementsByTagName('input');
+for(var i = 0; i < inputs.length; i++){
+	inputs[i].addEventListener('blur',formatUnit);
+}
 
 // Reset Dimensions Function
 function resetDimensions(event){
 	event.preventDefault();
 
 	// Reset Variables
-	reset_entity_name = document.getElementById('entity_name').getAttribute('data-name');
+	reset_entity_name = document.getElementById('name').getAttribute('data-name');
 	reset_width = document.getElementById('width').getAttribute('data-width');
 	reset_depth = document.getElementById('depth').getAttribute('data-depth');
 	reset_height = document.getElementById('height').getAttribute('data-height');
@@ -32,7 +27,7 @@ function resetDimensions(event){
 	reset_z = document.getElementById('z').getAttribute('data-z');
 	
 	// Reset Values
-	document.getElementById('entity_name').innerHTML = reset_entity_name;
+	document.getElementById('name').innerHTML = reset_entity_name;
 	document.getElementById('width').value = reset_width; 
 	document.getElementById('depth').value = reset_depth;
 	document.getElementById('height').value = reset_height;
@@ -44,4 +39,38 @@ function resetDimensions(event){
 // Apply Dimensions Function
 function applyDimensions(event){
 	event.preventDefault();
+	sendToSKP();
+}
+
+function formatUnit(event){
+	value = this.value;
+	var reg = new RegExp("^(-)?[0-9]+(\.)?([0-9]+)?(\'|\")?$");
+	if(!reg.test(value)){
+		name = this.getAttribute('name');
+		this.value = this.getAttribute('data-' + name);
+	} else {
+		if(value.indexOf("'") > 0){
+			value = value.substring(0, value.length - 1);
+			value = parseFloat(value);
+			value = value * 12;
+			value = value + '"';
+			this.value = value;
+		}
+		if(value.indexOf('"') < 1){
+			this.value = value + '"';	
+		}
+	}
+}
+
+function sendToSKP(){
+	var inputs = document.getElementsByTagName('input');
+	var data = '{';
+	for(var i = 0; i < inputs.length; i++){
+		value = inputs[i].value.replace('"','&quot;');
+		data += inputs[i].getAttribute('name') + ': "' + value + '",';
+	}
+	data = data.substring(0, data.length -1);
+	data += '}';
+	query = 'skp:get_data@'+data;
+	window.location.href = query;
 }
