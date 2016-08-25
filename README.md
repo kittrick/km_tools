@@ -11,6 +11,8 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.2.8
+	First attempts at allowing the user to select the transformation axis, very complicated, still WIP.
 ### Version 1.2.7
 	Big updates in how the html window is written, much more flexible.
 	The HTML window now parses inch and foot data when the user enters input.

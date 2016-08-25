@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.7
+# Version: 1.2.8
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -28,8 +28,10 @@ module KM_Tools
 		def initialize(tool)
 			@tool = tool
 		end
-
 		def onSelectionBulkChange(selection)
+			@tool.get_object_info
+		end
+		def onSelectionCleared(selection)
 			@tool.get_object_info
 		end
 	end
@@ -71,7 +73,11 @@ module KM_Tools
 				@@info_window_open = false
 			}
 			@@my_dialog.add_action_callback("get_data") do |web_dialog, data|
-				puts data
+				data = JSON.parse(data);
+				data.each do |key, value|
+					value.sub!('&quot;', '"')
+				end
+				perform_transformation(data)
 			end
 			updateObserver = ModelUpdate.new(self)
 		    Sketchup.active_model.add_observer(updateObserver)
@@ -88,43 +94,68 @@ module KM_Tools
 		def get_object_info
 			
 			# Get Selection
-			selection = Sketchup.active_model.selection.first
+			selection = Sketchup.active_model.selection
+
+			# Set CSS and JS Locations
 			css = get_file('Resources/css/styles.css')
 			js = get_file('Resources/js/scripts.js')
 
-			# Start HTML
-			html = %Q{
-				<!html lang="en">
-				<head>
-					<title>Entity Dimensions</title>
-					<meta charset="utf8" />
-					<link rel="stylesheet" type="text/css" href="#{css}">
-				</head>
-				<body class="entity_dimensions">
-			}
-			# Get Element Name
-			unless defined? selection.typename
-				name = "Select at least one object."
+			if selection.length == 1
+
+				# Add Transformation Anchors
+				transformation_anchors
+
+				selection = selection.first
+				# Start HTML
+				html = %Q{
+					<!html lang="en">
+					<head>
+						<title>Entity Dimensions</title>
+						<meta charset="utf8" />
+						<link rel="stylesheet" type="text/css" href="#{css}">
+					</head>
+					<body class="entity_dimensions">
+				}
+				# Get Element Name
+				if defined? selection.definition.name
+					name = selection.definition.name
+				elsif ! defined? selection.typename
+					name = "Select at least one object."
+				else
+					name = selection.typename
+				end
+				html += %Q{<h1 id="name" data-name="#{name}">#{name}</h1>}
+				html += %Q{<form name="info_form" id="info_form">}
+
+				# Get Bounding Box Dimensions
+				html += html_input('width',selection.bounds.width.to_s)
+				html += html_input('depth',selection.bounds.depth.to_s)
+				html += html_input('height',selection.bounds.height.to_s)
+
+				# Get x, y ,z Coordinates
+				if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
+					html += html_input('x',selection.transformation.origin[0].to_s)
+					html += html_input('y',selection.transformation.origin[1].to_s)
+					html += html_input('z',selection.transformation.origin[2].to_s)
+				end
+				html += %Q{<button name="reset" id="reset">Reset</button><button name="apply" id="apply">Apply</button></form>}
+				html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
+				@@my_dialog.set_html(html)
 			else
-				name = selection.typename
+				html = %Q{
+					<!html lang="en">
+						<head>
+							<title>Entity Dimensions</title>
+							<meta charset="utf8" />
+							<link rel="stylesheet" type="text/css" href="#{css}">
+						</head>
+						<body class="entity_dimensions">
+							<h1 class="notice">Please select a single object.</h1>
+						<body>
+					</html>
+				}
+				@@my_dialog.set_html(html)
 			end
-			html += %Q{<h1 id="name" data-name="#{name}">#{name}</h1>}
-			html += %Q{<form name="info_form" id="info_form">}
-
-			# Get Bounding Box Dimensions
-			html += html_input('width',selection.bounds.width.to_s)
-			html += html_input('depth',selection.bounds.depth.to_s)
-			html += html_input('height',selection.bounds.height.to_s)
-
-			# Get x, y ,z Coordinates
-			if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
-				html += html_input('x',selection.transformation.origin[0].to_s)
-				html += html_input('y',selection.transformation.origin[1].to_s)
-				html += html_input('z',selection.transformation.origin[2].to_s)
-			end
-			html += %Q{<button name="reset" id="reset">Reset</button><button name="apply" id="apply">Apply</button></form>}
-			html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
-			@@my_dialog.set_html(html)
 
 		end #get_object_info
 
@@ -137,6 +168,71 @@ module KM_Tools
 			@@my_dialog.show_modal
 			get_object_info
 		end #display_info_window
+
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This Method applies the requested transformation to the selected object or component.
+		# 
+		#----------------------------------------------------------------------------------------#
+		def perform_transformation(data)
+			@selection = Sketchup.active_model.selection.first
+			if data.key?('width') && data.key?('depth') && data.key?('height')
+				xscale = (data['width'].sub '"', '').to_f / @selection.bounds.width.to_f
+				yscale = (data['depth'].sub '"', '').to_f / @selection.bounds.depth.to_f
+				zscale = (data['height'].sub '"', '').to_f / @selection.bounds.height.to_f
+			end
+			transformation = Geom::Transformation.scaling xscale, yscale, zscale
+			@selection.transform!(transformation)
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This method adds transformation Anchors
+		# 
+		#----------------------------------------------------------------------------------------#
+		def transformation_anchors
+			@selection = Sketchup.active_model.selection.first
+			bounds = @selection.bounds
+			corners = []
+			for i in 0..7
+				corners[i] = bounds.corner(i)
+			end
+			corners.each do |coords|
+				#drawCube(coords)
+			end
+			puts corners
+			puts "\n"*3
+		end
+
+		#This related function draws cubes at the anchor points
+		def drawCube(coord)
+			model = Sketchup.active_model
+			entities = model.entities
+			# Plane 1
+			pt1 = [coord[0]-1, coord[1]-1, coord[2]]
+			pt2 = [coord[0]+1, coord[1]-1, coord[2]]
+			pt3 = [coord[0]-1, coord[1]+1, coord[2]]
+			pt4 = [coord[0]+1, coord[1]+1, coord[2]]
+			face1 = entities.add_face pt1, pt2, pt4, pt3
+			face1.material = "red"
+
+			# Plane 2
+			pt1 = [coord[0], coord[1]+1, coord[2]+1]
+			pt2 = [coord[0], coord[1]-1, coord[2]+1]
+			pt3 = [coord[0], coord[1]+1, coord[2]-1]
+			pt4 = [coord[0], coord[1]-1, coord[2]-1]
+			face2 = entities.add_face pt1, pt2, pt4, pt3
+			face2.material = "green"
+			
+			# Plane 3
+			pt1 = [coord[0]+1, coord[1], coord[2]+1]
+			pt2 = [coord[0]-1, coord[1], coord[2]+1]
+			pt3 = [coord[0]+1, coord[1], coord[2]-1]
+			pt4 = [coord[0]-1, coord[1], coord[2]-1]
+			face3 = entities.add_face pt1, pt2, pt4, pt3
+			face3.material = "blue"
+
+		end
 
 		#----------------------------------------------------------------------------------------#
 		# 

@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------
 // 
-// Version: 1.2.7
+// Version: 1.2.8
 // Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 // 
 //----------------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ function sendToSKP(){
 	var data = '{';
 	for(var i = 0; i < inputs.length; i++){
 		value = inputs[i].value.replace('"','&quot;');
-		data += inputs[i].getAttribute('name') + ': "' + value + '",';
+		data += '"' + inputs[i].getAttribute('name') + '" : "' + value + '",';
 	}
 	data = data.substring(0, data.length -1);
 	data += '}';
