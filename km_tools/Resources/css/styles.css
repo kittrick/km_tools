@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------------------
 # 
-# Version: 1.2.9
+# Version: 1.3.0
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------*/
@@ -18,7 +18,10 @@
 		margin-left: 65px;
 		}
 		.entity_dimensions h1.notice {
-			margin-left: 0;
+			margin: 30px;
+			padding: 40px;
+			border: 1px solid #ccc;
+			color: #ccc;
 			text-align: center;
 			}
 	.entity_dimensions label {

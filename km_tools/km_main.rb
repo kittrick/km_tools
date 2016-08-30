@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.9
+# Version: 1.3.0
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -129,7 +129,6 @@ module KM_Tools
 			js = get_file('Resources/js/scripts.js')
 
 			if selection.length == 1
-
 				selection = selection.first
 				# Start HTML
 				html = %Q{
@@ -163,7 +162,7 @@ module KM_Tools
 					if absolute_dims[1] > 0.0001 then html += html_input('depth',"%.#{unit_length}f\"" % absolute_dims[1], false) end
 					if absolute_dims[2] > 0.0001 then html += html_input('height',"%.#{unit_length}f\"" % absolute_dims[2], false) end
 
-					html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
+					html += %Q{</body></html>}
 					@@my_dialog.set_html(html)
 				else
 					html += %Q{<form name="info_form" id="info_form">}
@@ -192,6 +191,24 @@ module KM_Tools
 					html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
 					@@my_dialog.set_html(html)
 				end
+			elsif selection.length > 1
+				# Start HTML
+				html = %Q{
+					<!html lang="en">
+					<head>
+						<title>Entity Dimensions</title>
+						<meta charset="utf8" />
+						<link rel="stylesheet" type="text/css" href="#{css}">
+					</head>
+					<body class="entity_dimensions">
+					<h1 id="name">Selection</h1>
+				}
+
+				# Count the number of objects
+				html += html_input('Selected:', Sketchup.active_model.selection.length.to_s + ' entities', false)
+
+				html += %Q{</body></html>}
+				@@my_dialog.set_html(html)
 			else
 				html = %Q{
 					<!html lang="en">
@@ -201,7 +218,7 @@ module KM_Tools
 							<link rel="stylesheet" type="text/css" href="#{css}">
 						</head>
 						<body class="entity_dimensions">
-							<h1 class="notice">Please select a single object.</h1>
+							<h1 class="notice">Please select<br/>at least<br/>one entity</h1>
 						<body>
 					</html>
 				}
