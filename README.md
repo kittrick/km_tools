@@ -2,11 +2,8 @@
 A set of tools for Sketchup to assist in production design.
 
 ## Installation
-Simply add the plugin to your sketchup plugin directory, found typically under:
-
-`Users/<yourname>/Library/Application Support/Sketchup <year>/SketchupPlugins`
-
-Where `<yourname>` is your username and `<year>` is the version of Sketchup you have installed.
+Simply download the `km_tools.x.x.x.rbz` plugin, open `Sketchup > Preferences` and navigate to
+the `Extensions` settings. Choose `Install Extension` and add the km_tools plugin!
 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
