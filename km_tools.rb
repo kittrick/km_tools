@@ -34,7 +34,7 @@ module KM_Tools
 	name = 'KM_Tools'
 	version = '1.3.2'
 	$KM_folder = 'km_tools'
-	sdate = '08/23/2016'
+	sdate = '08/30/2016'
 	creator = 'Kit MacAllister'
 	description = 'Assorted Sketchup Tools Created by Kit MacAllister'
 
