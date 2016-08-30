@@ -32,7 +32,7 @@ require 'extensions.rb'
 module KM_Tools
 
 	name = 'KM_Tools'
-	version = '1.2.4'
+	version = '1.3.2'
 	$KM_folder = 'km_tools'
 	sdate = '08/23/2016'
 	creator = 'Kit MacAllister'
