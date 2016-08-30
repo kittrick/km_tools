@@ -11,6 +11,8 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.3.2
+	Rearranged the transformation method for more predictable (correct) results.
 ### Version 1.3.1
 	Added a packaged version to the repository for easy download.
 ### Version 1.3.0

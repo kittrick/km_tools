@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.3.1
+# Version: 1.3.2
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -292,16 +292,6 @@ module KM_Tools
 			view_origin = Sketchup.active_model.axes.origin
 			object_position = get_relative_position(selection)
 
-			# Translation Math
-			new_x = - object_position[0] + view_origin[0].to_f + data['x'].chomp('"').to_f
-			new_y = - object_position[1] + view_origin[1].to_f + data['y'].chomp('"').to_f
-			new_z = - object_position[2] + view_origin[2].to_f + data['z'].chomp('"').to_f
-			vector = Geom::Vector3d.new new_x, new_y, new_z
-
-			# Translate the Object
-			transformation = Geom::Transformation.translation vector
-			selection.transform!(transformation)
-
 			# Don't trust sketchup's built in height, width, depth, using my own
 			dimensions = get_absolute_dimensions(selection)
 			origin = Geom::Point3d.new object_position[0], object_position[1], object_position[2]
@@ -312,6 +302,16 @@ module KM_Tools
 
 			# Scale the object
 			transformation = Geom::Transformation.scaling origin, xscale, yscale, zscale
+			selection.transform!(transformation)
+
+			# Translation Math
+			new_x = - object_position[0] + view_origin[0].to_f + data['x'].chomp('"').to_f
+			new_y = - object_position[1] + view_origin[1].to_f + data['y'].chomp('"').to_f
+			new_z = - object_position[2] + view_origin[2].to_f + data['z'].chomp('"').to_f
+			vector = Geom::Vector3d.new new_x, new_y, new_z
+
+			# Translate the Object
+			transformation = Geom::Transformation.translation vector
 			selection.transform!(transformation)
 		end
 
