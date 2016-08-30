@@ -2,7 +2,7 @@
 ### Credits:
 # Developed by Kit MacAllister
 #
-### Version: 1.3.0
+### Version: 1.3.1
 #
 ### License:
 # Copyright (c) 2016 Kit MacAllister
