@@ -11,6 +11,9 @@ Where `<yourname>` is your username and `<year>` is the version of Sketchup you 
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.2.9
+	The plugin is now working very well and is fairly stable. The Copy function sometimes
+	results in unpredictable duplication and still needs some modification.
 ### Version 1.2.8
 	First attempts at allowing the user to select the transformation axis, very complicated, still WIP.
 ### Version 1.2.7

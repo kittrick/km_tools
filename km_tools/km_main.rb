@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.2.8
+# Version: 1.2.9
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -23,6 +23,15 @@ module KM_Tools
 		def onTransactionCommit(selection)
 			@tool.get_object_info
 		end
+		def onTransactionUndo(selection)
+			@tool.get_object_info
+		end
+		def onTransactionRedo(selection)
+			@tool.get_object_info
+		end
+		def onExplode(selection)
+			@tool.get_object_info
+		end
 	end
 	class SelectionUpdate < Sketchup::SelectionObserver
 		def initialize(tool)
@@ -31,8 +40,11 @@ module KM_Tools
 		def onSelectionBulkChange(selection)
 			@tool.get_object_info
 		end
+		def onSelectionAdded(selection)
+		 	@tool.get_object_info
+		end
 		def onSelectionCleared(selection)
-			@tool.get_object_info
+		 	@tool.get_object_info
 		end
 	end
 
@@ -44,7 +56,7 @@ module KM_Tools
 	class Dimension_Tool
 		
 		@@info_window_open = false
-		@@my_dialog = UI::WebDialog.new("Entity Dimensions", false, "Selection Info", 240, 210, 200, 200, false)
+		@@my_dialog = UI::WebDialog.new('Entity Dimensions', false, 'Selection Info', 240, 210, 200, 200, false)
 
 		def initialize
 			#----------------------------------------------------------------------------------------#
@@ -77,7 +89,23 @@ module KM_Tools
 				data.each do |key, value|
 					value.sub!('&quot;', '"')
 				end
-				perform_transformation(data)
+				# Scale and Translate Command
+				if data['command'] == 'apply'
+					Sketchup.active_model.start_operation('apply transformation', 'true')
+					perform_transformation(data)
+					get_object_info
+					Sketchup.active_model.commit_operation
+				# Duplicate Command
+				elsif data['command'] == 'copy'
+					Sketchup.active_model.start_operation('copy & transform', 'true')
+					copy_selected_object
+					perform_transformation(data)
+					get_object_info
+					Sketchup.active_model .commit_operation
+				# Reset Command
+				elsif data['command'] == 'reset'
+					get_object_info
+				end
 			end
 			updateObserver = ModelUpdate.new(self)
 		    Sketchup.active_model.add_observer(updateObserver)
@@ -102,9 +130,6 @@ module KM_Tools
 
 			if selection.length == 1
 
-				# Add Transformation Anchors
-				transformation_anchors
-
 				selection = selection.first
 				# Start HTML
 				html = %Q{
@@ -125,22 +150,48 @@ module KM_Tools
 					name = selection.typename
 				end
 				html += %Q{<h1 id="name" data-name="#{name}">#{name}</h1>}
-				html += %Q{<form name="info_form" id="info_form">}
 
-				# Get Bounding Box Dimensions
-				html += html_input('width',selection.bounds.width.to_s)
-				html += html_input('depth',selection.bounds.depth.to_s)
-				html += html_input('height',selection.bounds.height.to_s)
+				# Get Absolute Dimensions
+				if name == 'Edge' || name == 'Face'
+					absolute_dims = get_absolute_dimensions(selection)
 
-				# Get x, y ,z Coordinates
-				if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
-					html += html_input('x',selection.transformation.origin[0].to_s)
-					html += html_input('y',selection.transformation.origin[1].to_s)
-					html += html_input('z',selection.transformation.origin[2].to_s)
+					# Get Model Unit Settings
+					unit_length = Sketchup.active_model.options["UnitsOptions"]["LengthPrecision"]
+
+					# Get Bounding Box Dimensions
+					if absolute_dims[0] > 0.0001 then html += html_input('width',"%.#{unit_length}f\"" % absolute_dims[0], false) end
+					if absolute_dims[1] > 0.0001 then html += html_input('depth',"%.#{unit_length}f\"" % absolute_dims[1], false) end
+					if absolute_dims[2] > 0.0001 then html += html_input('height',"%.#{unit_length}f\"" % absolute_dims[2], false) end
+
+					html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
+					@@my_dialog.set_html(html)
+				else
+					html += %Q{<form name="info_form" id="info_form">}
+					absolute_dims = get_absolute_dimensions(selection)
+					relativePos = get_relative_position(selection)
+
+					# Get Model Unit Settings
+					unit_length = Sketchup.active_model.options["UnitsOptions"]["LengthPrecision"]
+
+					# Get Bounding Box Dimensions
+					html += html_input('width',"%.#{unit_length}f\"" % absolute_dims[0])
+					html += html_input('depth',"%.#{unit_length}f\"" % absolute_dims[1])
+					html += html_input('height',"%.#{unit_length}f\"" % absolute_dims[2])
+
+					# Get x, y ,z Coordinates
+					if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
+						html += html_input('x',"%.#{unit_length}f\"" % relativePos[0])
+						html += html_input('y',"%.#{unit_length}f\"" % relativePos[1])
+						html += html_input('z',"%.#{unit_length}f\"" % relativePos[2])
+					end
+					html += %Q{
+						<button name="reset" id="reset">Reset</button>
+						<button name="copy" id="copy">copy</button>
+						<button name="apply" id="apply">Apply</button>
+						</form>}
+					html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
+					@@my_dialog.set_html(html)
 				end
-				html += %Q{<button name="reset" id="reset">Reset</button><button name="apply" id="apply">Apply</button></form>}
-				html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
-				@@my_dialog.set_html(html)
 			else
 				html = %Q{
 					<!html lang="en">
@@ -171,67 +222,110 @@ module KM_Tools
 
 		#----------------------------------------------------------------------------------------#
 		# 
-		# This Method applies the requested transformation to the selected object or component.
+		# This method gets absolute dimensions instead of Sketchup's width depth height
 		# 
 		#----------------------------------------------------------------------------------------#
-		def perform_transformation(data)
-			@selection = Sketchup.active_model.selection.first
-			if data.key?('width') && data.key?('depth') && data.key?('height')
-				xscale = (data['width'].sub '"', '').to_f / @selection.bounds.width.to_f
-				yscale = (data['depth'].sub '"', '').to_f / @selection.bounds.depth.to_f
-				zscale = (data['height'].sub '"', '').to_f / @selection.bounds.height.to_f
+		def get_absolute_dimensions(selection)
+			corners = get_corners(selection)
+			xArray, yArray, zArray = [], [], []
+			corners.each do |coord|
+				xArray.push coord[0]
+				yArray.push coord[1]
+				zArray.push coord[2]
 			end
-			transformation = Geom::Transformation.scaling xscale, yscale, zscale
-			@selection.transform!(transformation)
+			xArray.sort!
+			yArray.sort!
+			zArray.sort!
+
+			xLen = xArray[-1] - xArray[0]
+			yLen = yArray[-1] - yArray[0]
+			zLen = zArray[-1] - zArray[0]
+
+			dimensions = [xLen, yLen, zLen]
+			return dimensions
 		end
 
 		#----------------------------------------------------------------------------------------#
 		# 
-		# This method adds transformation Anchors
+		# This method gets absolute an object's position relative to the current view axis
+		# In the futre this should accept a point instead of an object so that the user can
+		# set the position based on a side or corner. Still a work in progress.
+		# Does not currently work with rotated origins, just translated ones.
 		# 
 		#----------------------------------------------------------------------------------------#
-		def transformation_anchors
-			@selection = Sketchup.active_model.selection.first
-			bounds = @selection.bounds
+		def get_relative_position(selection)
+			view_origin = Sketchup.active_model.axes.origin
+			selection_position = selection.transformation.origin
+			relative_position = [
+				selection_position[0] - view_origin[0],
+				selection_position[1] - view_origin[1],
+				selection_position[2] - view_origin[2]
+			]
+			return relative_position
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This performs the actual transformation
+		# 
+		#----------------------------------------------------------------------------------------#
+		def perform_transformation(data)
+			# Get Location Data
+			selection = Sketchup.active_model.selection.first
+			view_origin = Sketchup.active_model.axes.origin
+			object_position = get_relative_position(selection)
+
+			# Translation Math
+			new_x = - object_position[0] + view_origin[0].to_f + data['x'].chomp('"').to_f
+			new_y = - object_position[1] + view_origin[1].to_f + data['y'].chomp('"').to_f
+			new_z = - object_position[2] + view_origin[2].to_f + data['z'].chomp('"').to_f
+			vector = Geom::Vector3d.new new_x, new_y, new_z
+
+			# Translate the Object
+			transformation = Geom::Transformation.translation vector
+			selection.transform!(transformation)
+
+			# Don't trust sketchup's built in height, width, depth, using my own
+			dimensions = get_absolute_dimensions(selection)
+			origin = Geom::Point3d.new object_position[0], object_position[1], object_position[2]
+
+			xscale = data['width'].chomp('"').to_f / dimensions[0]
+			yscale = data['depth'].chomp('"').to_f / dimensions[1]
+			zscale = data['height'].chomp('"').to_f / dimensions[2]
+
+			# Scale the object
+			transformation = Geom::Transformation.scaling origin, xscale, yscale, zscale
+			selection.transform!(transformation)
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
+		# Copies the selected object and then selects it
+		# 
+		#----------------------------------------------------------------------------------------#
+		def copy_selected_object()
+			model = Sketchup.active_model
+			entities = model.active_entities
+			group = entities.add_group Sketchup.active_model.active_entities.first
+			copy = group.copy
+			group.explode
+			copy.explode
+			model.selection.clear
+			model.selection.add entities[-1]
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This method gets object corners
+		# 
+		#----------------------------------------------------------------------------------------#
+		def get_corners(selection)
+			bounds = selection.bounds
 			corners = []
 			for i in 0..7
 				corners[i] = bounds.corner(i)
 			end
-			corners.each do |coords|
-				#drawCube(coords)
-			end
-			puts corners
-			puts "\n"*3
-		end
-
-		#This related function draws cubes at the anchor points
-		def drawCube(coord)
-			model = Sketchup.active_model
-			entities = model.entities
-			# Plane 1
-			pt1 = [coord[0]-1, coord[1]-1, coord[2]]
-			pt2 = [coord[0]+1, coord[1]-1, coord[2]]
-			pt3 = [coord[0]-1, coord[1]+1, coord[2]]
-			pt4 = [coord[0]+1, coord[1]+1, coord[2]]
-			face1 = entities.add_face pt1, pt2, pt4, pt3
-			face1.material = "red"
-
-			# Plane 2
-			pt1 = [coord[0], coord[1]+1, coord[2]+1]
-			pt2 = [coord[0], coord[1]-1, coord[2]+1]
-			pt3 = [coord[0], coord[1]+1, coord[2]-1]
-			pt4 = [coord[0], coord[1]-1, coord[2]-1]
-			face2 = entities.add_face pt1, pt2, pt4, pt3
-			face2.material = "green"
-			
-			# Plane 3
-			pt1 = [coord[0]+1, coord[1], coord[2]+1]
-			pt2 = [coord[0]-1, coord[1], coord[2]+1]
-			pt3 = [coord[0]+1, coord[1], coord[2]-1]
-			pt4 = [coord[0]-1, coord[1], coord[2]-1]
-			face3 = entities.add_face pt1, pt2, pt4, pt3
-			face3.material = "blue"
-
+			return corners
 		end
 
 		#----------------------------------------------------------------------------------------#
@@ -247,13 +341,22 @@ module KM_Tools
 		end #pbcopy
 
 		# Returns an HTML Label and Input field as a String
-		def html_input(name, value)
-			value.sub!('"','&quot;')
-			html = %Q{
-				<label for="#{name}">#{name.capitalize}:</label>
-				<input name="#{name}" id="#{name}" value="#{value}" data-#{name}="#{value}"/>
-			}
-			return html
+		def html_input(name, value, editable = true)
+			if editable
+				value.to_s.sub!('"','&quot;')
+				html = %Q{
+					<label for="#{name}">#{name.capitalize}:</label>
+					<input name="#{name}" id="#{name}" value="#{value}" data-#{name}="#{value}"/>
+				}
+				return html
+			else
+				value.to_s.sub!('"','&quot;')
+				html = %Q{
+					<label for="#{name}">#{name.capitalize}:</label>
+					<span id="#{name}">#{value}</span>
+				}
+				return html
+			end
 		end
 		
 		# Fetches Files
