@@ -2,7 +2,7 @@
 ### Credits:
 # Developed by Kit MacAllister
 #
-### Version: 1.3.2
+### Version: 1.3.3
 #
 ### License:
 # Copyright (c) 2016 Kit MacAllister
@@ -32,9 +32,9 @@ require 'extensions.rb'
 module KM_Tools
 
 	name = 'KM_Tools'
-	version = '1.3.2'
+	version = '1.3.3'
 	$KM_folder = 'km_tools'
-	sdate = '08/30/2016'
+	sdate = '08/31/2016'
 	creator = 'Kit MacAllister'
 	description = 'Assorted Sketchup Tools Created by Kit MacAllister'
 
@@ -46,7 +46,7 @@ module KM_Tools
 	ext = SketchupExtension.new('KM_Tools', path) 
 	ext.creator = creator 
 	ext.version = version + ' - ' + sdate 
-	ext.copyright = 'MIT Open Source - ' + creator + ' - © 2016' 
+	ext.copyright = 'MIT Open Source'
 	ext.description = description
 	Sketchup.register_extension ext, true
 

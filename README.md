@@ -8,6 +8,9 @@ the `Extensions` settings. Choose `Install Extension` and add the km_tools plugi
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.3.3
+	Updated how distance is calculated from the axis resulting in more predictable transformations.
+	Added functionality to the copy function allowing the user to specify the number of copies.
 ### Version 1.3.2
 	Rearranged the transformation method for more predictable (correct) results.
 ### Version 1.3.1

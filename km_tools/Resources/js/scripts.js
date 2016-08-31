@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------
 // 
-// Version: 1.3.2
+// Version: 1.3.3
 // Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 // 
 //----------------------------------------------------------------------------------------
@@ -79,6 +79,14 @@ function sendToSKP(command){
   for(var i = 0; i < inputs.length; i++){
     value = inputs[i].value.replace("\"","&quot;");
     data += "\"" + inputs[i].getAttribute("name") + "\" : \"" + value + "\",";
+  }
+  if(command == "copy"){
+    for(var i = 0; i < inputs.length; i++){
+      value = inputs[i].getAttribute("data-"+inputs[i].getAttribute("name"))
+      value = value.replace("\"","&quot;");
+      data += "\"data-"+inputs[i].getAttribute("name")+"\" : ";
+      data += "\""+value+"\",";
+    } 
   }
   data = data.substring(0, data.length -1);
   data += "}";

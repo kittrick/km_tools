@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.3.2
+# Version: 1.3.3
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -89,6 +89,7 @@ module KM_Tools
 				data.each do |key, value|
 					value.sub!('&quot;', '"')
 				end
+				data = inch_to_f(data)
 				# Scale and Translate Command
 				if data['command'] == 'apply'
 					Sketchup.active_model.start_operation('apply transformation', 'true')
@@ -98,9 +99,33 @@ module KM_Tools
 				# Duplicate Command
 				elsif data['command'] == 'copy'
 					Sketchup.active_model.start_operation('copy & transform', 'true')
-					copy_selected_object
-					perform_transformation(data)
-					get_object_info
+						prompts = ["How many copies? "]
+ 						defaults = ["1"]
+ 						input = UI.inputbox(prompts, defaults, "Copy selected entity.")
+ 						if(input)
+ 							data_orig = {}
+ 							data_trans = {}
+ 							data_diff = {}
+ 							data.each do |key, value|
+ 								if key.index('data-')
+ 									data_orig.merge!(key => value)
+ 								elsif ! key.index('command')
+ 									data_trans.merge!(key => value)
+ 								end
+ 							end
+ 							data_trans.each do |key, value|
+ 								diff = value.to_f - data_orig["data-#{key}"].to_f
+ 								data_diff.merge!(key => diff)
+ 							end
+ 							for i in 1..(input[0].to_i)
+ 								copy_selected_object()
+ 								perform_transformation(data)
+ 								data.each do |key, value|
+ 									data[key] = value.to_f + data_diff[key].to_f
+ 								end
+ 							end
+							get_object_info
+						end
 					Sketchup.active_model .commit_operation
 				# Reset Command
 				elsif data['command'] == 'reset'
@@ -289,30 +314,44 @@ module KM_Tools
 		def perform_transformation(data)
 			# Get Location Data
 			selection = Sketchup.active_model.selection.first
-			view_origin = Sketchup.active_model.axes.origin
 			object_position = get_relative_position(selection)
 
 			# Don't trust sketchup's built in height, width, depth, using my own
 			dimensions = get_absolute_dimensions(selection)
 			origin = Geom::Point3d.new object_position[0], object_position[1], object_position[2]
 
-			xscale = data['width'].chomp('"').to_f / dimensions[0]
-			yscale = data['depth'].chomp('"').to_f / dimensions[1]
-			zscale = data['height'].chomp('"').to_f / dimensions[2]
+			xscale = data['width'] / dimensions[0]
+			yscale = data['depth'] / dimensions[1]
+			zscale = data['height'] / dimensions[2]
 
 			# Scale the object
 			transformation = Geom::Transformation.scaling origin, xscale, yscale, zscale
 			selection.transform!(transformation)
 
 			# Translation Math
-			new_x = - object_position[0] + view_origin[0].to_f + data['x'].chomp('"').to_f
-			new_y = - object_position[1] + view_origin[1].to_f + data['y'].chomp('"').to_f
-			new_z = - object_position[2] + view_origin[2].to_f + data['z'].chomp('"').to_f
+			new_x = - object_position[0] + data['x']
+			new_y = - object_position[1] + data['y']
+			new_z = - object_position[2] + data['z']
+
 			vector = Geom::Vector3d.new new_x, new_y, new_z
 
 			# Translate the Object
 			transformation = Geom::Transformation.translation vector
 			selection.transform!(transformation)
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This method turns strings in the input data into numbers
+		# 
+		#----------------------------------------------------------------------------------------#
+		def inch_to_f(data)
+			data.each do |key, value|
+				if value.index('"')
+					data["#{key}"] = value.chomp('"').to_f
+				end
+			end
+			return data
 		end
 
 		#----------------------------------------------------------------------------------------#
