@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------
 // 
-// Version: 1.3.3
+// Version: 1.3.4
 // Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 // 
 //----------------------------------------------------------------------------------------
@@ -28,6 +28,9 @@ function resetDimensions(event){
   reset_x = document.getElementById("x").getAttribute("data-x");
   reset_y = document.getElementById("y").getAttribute("data-y");
   reset_z = document.getElementById("z").getAttribute("data-z");
+  reset_x_rotation = document.getElementById("x-rotation").getAttribute("data-x-rotation");
+  reset_y_rotation = document.getElementById("y-rotation").getAttribute("data-y-rotation");
+  reset_z_rotation = document.getElementById("z-rotation").getAttribute("data-z-rotation");
   
   // Reset Values
   document.getElementById("name").innerHTML = reset_entity_name;
@@ -37,6 +40,9 @@ function resetDimensions(event){
   document.getElementById("x").value = reset_x;
   document.getElementById("y").value = reset_y;
   document.getElementById("z").value = reset_z;
+  document.getElementById("x-rotation").value = reset_x_rotation;
+  document.getElementById("y-rotation").value = reset_y_rotation;
+  document.getElementById("z-rotation").value = reset_z_rotation;
   sendToSKP("reset");
 }
 
@@ -54,20 +60,32 @@ function applyCopy(event){
 
 function formatUnit(event){
   value = this.value;
-  var reg = new RegExp('^((\-)?([0-9]+)?(\.)?([0-9]+)?(\"|\')?)$');
-  if(!reg.test(value)){
-    name = this.getAttribute("name");
-    this.value = this.getAttribute("data-" + name);
-  } else {
-    if(value.indexOf("'") > 0){
-      value = value.substring(0, value.length - 1);
-      value = parseFloat(value);
-      value = value * 12;
-      value = value + "\"";
-      this.value = value;
+  if(this.id.indexOf("rotation") > 0){
+    var reg = new RegExp('^((\-)?([0-9]+)?(\.)?([0-9]+)?(\°)?)$')
+    if(!reg.test(value)){
+      name = this.getAttribute("name");
+      this.value = this.getAttribute("data-" + name);
+    } else {
+      if(value.indexOf("°") < 1){
+        this.value = value + "°"; 
+      }
     }
-    if(value.indexOf("\"") < 1){
-      this.value = value + "\"";  
+  } else {
+    var reg = new RegExp('^((\-)?([0-9]+)?(\.)?([0-9]+)?(\"|\')?)$');
+    if(!reg.test(value)){
+      name = this.getAttribute("name");
+      this.value = this.getAttribute("data-" + name);
+    } else {
+      if(value.indexOf("'") > 0){
+        value = value.substring(0, value.length - 1);
+        value = parseFloat(value);
+        value = value * 12;
+        value = value + "\"";
+        this.value = value;
+      }
+      if(value.indexOf("\"") < 1){
+        this.value = value + "\"";  
+      }
     }
   }
 }
@@ -78,18 +96,19 @@ function sendToSKP(command){
   data += "\"command\": \"" + command + "\",";
   for(var i = 0; i < inputs.length; i++){
     value = inputs[i].value.replace("\"","&quot;");
+    value = value.replace("°","&deg;");
     data += "\"" + inputs[i].getAttribute("name") + "\" : \"" + value + "\",";
   }
-  if(command == "copy"){
-    for(var i = 0; i < inputs.length; i++){
-      value = inputs[i].getAttribute("data-"+inputs[i].getAttribute("name"))
-      value = value.replace("\"","&quot;");
-      data += "\"data-"+inputs[i].getAttribute("name")+"\" : ";
-      data += "\""+value+"\",";
-    } 
-  }
+  for(var i = 0; i < inputs.length; i++){
+    value = inputs[i].getAttribute("data-"+inputs[i].getAttribute("name"))
+    value = value.replace("\"","&quot;");
+    value = value.replace("°","&deg;");
+    data += "\"data-"+inputs[i].getAttribute("name")+"\" : ";
+    data += "\""+value+"\",";
+  } 
   data = data.substring(0, data.length -1);
   data += "}";
   query = "skp:get_data@" + data;
+  console.log(query)
   window.location.href = query;
 }

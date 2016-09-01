@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.3.3
+# Version: 1.3.4
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -56,7 +56,7 @@ module KM_Tools
 	class Dimension_Tool
 		
 		@@info_window_open = false
-		@@my_dialog = UI::WebDialog.new('Entity Dimensions', false, 'Selection Info', 240, 210, 200, 200, false)
+		@@my_dialog = UI::WebDialog.new('Entity Dimensions', false, 'Selection Info', 240, 280, 200, 200, false)
 
 		def initialize
 			#----------------------------------------------------------------------------------------#
@@ -85,16 +85,36 @@ module KM_Tools
 				@@info_window_open = false
 			}
 			@@my_dialog.add_action_callback("get_data") do |web_dialog, data|
-				data = JSON.parse(data);
-				data.each do |key, value|
-					value.sub!('&quot;', '"')
-				end
-				data = inch_to_f(data)
+				data = JSON.parse(data)
+				data = clean_data(data)
 				# Scale and Translate Command
+
+				#Find the Difference
+				data_orig = {}
+				data_trans = {}
+				data_diff = {}
+				data.each do |key, value|
+					if key.index('data-')
+						data_orig.merge!(key => value)
+					elsif ! key.index('command')
+						data_trans.merge!(key => value)
+					end
+				end
+				data_trans.each do |key, value|
+					diff = value.to_f - data_orig["data-#{key}"].to_f
+					data_diff.merge!(key => diff)
+				end
+
+				#Apply Transformation
 				if data['command'] == 'apply'
 					Sketchup.active_model.start_operation('apply transformation', 'true')
-					perform_transformation(data)
-					get_object_info
+						data.each do |key, value|
+							if key.index 'rotation'
+								data[key] = data_diff[key].to_f
+							end
+						end
+						perform_transformation(data)
+						get_object_info
 					Sketchup.active_model.commit_operation
 				# Duplicate Command
 				elsif data['command'] == 'copy'
@@ -103,25 +123,11 @@ module KM_Tools
  						defaults = ["1"]
  						input = UI.inputbox(prompts, defaults, "Copy selected entity.")
  						if(input)
- 							data_orig = {}
- 							data_trans = {}
- 							data_diff = {}
- 							data.each do |key, value|
- 								if key.index('data-')
- 									data_orig.merge!(key => value)
- 								elsif ! key.index('command')
- 									data_trans.merge!(key => value)
- 								end
- 							end
- 							data_trans.each do |key, value|
- 								diff = value.to_f - data_orig["data-#{key}"].to_f
- 								data_diff.merge!(key => diff)
- 							end
  							for i in 1..(input[0].to_i)
  								copy_selected_object()
  								perform_transformation(data)
  								data.each do |key, value|
- 									data[key] = value.to_f + data_diff[key].to_f
+									data[key] = value.to_f + data_diff[key].to_f
  								end
  							end
 							get_object_info
@@ -177,7 +183,7 @@ module KM_Tools
 
 				# Get Absolute Dimensions
 				if name == 'Edge' || name == 'Face'
-					absolute_dims = get_absolute_dimensions(selection)
+					absolute_dims = get_dimensions(selection)
 
 					# Get Model Unit Settings
 					unit_length = Sketchup.active_model.options["UnitsOptions"]["LengthPrecision"]
@@ -191,8 +197,9 @@ module KM_Tools
 					@@my_dialog.set_html(html)
 				else
 					html += %Q{<form name="info_form" id="info_form">}
-					absolute_dims = get_absolute_dimensions(selection)
-					relativePos = get_relative_position(selection)
+					absolute_dims = get_dimensions(selection)
+					relative_pos = get_relative_position(selection)
+					rotation = get_rotation(selection)
 
 					# Get Model Unit Settings
 					unit_length = Sketchup.active_model.options["UnitsOptions"]["LengthPrecision"]
@@ -202,16 +209,23 @@ module KM_Tools
 					html += html_input('depth',"%.#{unit_length}f\"" % absolute_dims[1])
 					html += html_input('height',"%.#{unit_length}f\"" % absolute_dims[2])
 
-					# Get x, y ,z Coordinates
+					# Groups
 					if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
-						html += html_input('x',"%.#{unit_length}f\"" % relativePos[0])
-						html += html_input('y',"%.#{unit_length}f\"" % relativePos[1])
-						html += html_input('z',"%.#{unit_length}f\"" % relativePos[2])
+						# Position
+						html += html_input('x',"%.#{unit_length}f\"" % relative_pos[0])
+						html += html_input('y',"%.#{unit_length}f\"" % relative_pos[1])
+						html += html_input('z',"%.#{unit_length}f\"" % relative_pos[2])
+						# Rotation
+						html += html_input('x-rotation',"%.#{unit_length}f°" % rotation[0])
+						html += html_input('y-rotation',"%.#{unit_length}f°" % rotation[1])
+						html += html_input('z-rotation',"%.#{unit_length}f°" % rotation[2])
 					end
+
+					# Action Buttons
 					html += %Q{
 						<button name="reset" id="reset">Reset</button>
 						<button name="copy" id="copy">copy</button>
-						<button name="apply" id="apply">Apply</button>
+						<button type="submit" name="apply" id="apply">Apply</button>
 						</form>}
 					html += %Q{<script type="text/javascript" src="#{js}"></script></body></html>}
 					@@my_dialog.set_html(html)
@@ -267,8 +281,8 @@ module KM_Tools
 		# This method gets absolute dimensions instead of Sketchup's width depth height
 		# 
 		#----------------------------------------------------------------------------------------#
-		def get_absolute_dimensions(selection)
-			corners = get_corners(selection)
+		def get_dimensions(selection, local = false)
+			corners = get_corners(selection, local)
 			xArray, yArray, zArray = [], [], []
 			corners.each do |coord|
 				xArray.push coord[0]
@@ -285,6 +299,41 @@ module KM_Tools
 
 			dimensions = [xLen, yLen, zLen]
 			return dimensions
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
+		# This method gets object corners
+		# 
+		#----------------------------------------------------------------------------------------#
+		def get_corners(selection, local = false)
+			corners = []
+			if local && selection.typename == "group"
+				bounds = selection.local_bounds
+			else
+				bounds = selection.bounds
+			end
+
+			#----------------------------------------------------------------------------------------#
+			# 
+			# EXPERIMENTAL COOOODDDDEEEEE
+			# 
+			#----------------------------------------------------------------------------------------#
+
+			# rotaiton = get_rotation(selection)
+			# origin = selection.transformation.origin
+			# corners = new_corners
+
+			#----------------------------------------------------------------------------------------#
+			# 
+			# END EXPERIMENTAL CODDDDEEEE
+			# 
+			#----------------------------------------------------------------------------------------#
+
+			for i in 0..7
+				corners[i] = bounds.corner(i)
+			end
+			return corners
 		end
 
 		#----------------------------------------------------------------------------------------#
@@ -308,6 +357,19 @@ module KM_Tools
 
 		#----------------------------------------------------------------------------------------#
 		# 
+		# Returns the Rotation in Degrees of the selected object
+		# 
+		#----------------------------------------------------------------------------------------#
+		def get_rotation(selection)
+			t = selection.transformation
+			xrot = (Math.atan2(t.to_a[9],t.to_a[10])) * (180 / Math::PI)
+  			yrot = (Math.asin(t.to_a[8])) * (180 / Math::PI)
+  			zrot = (Math.atan2(t.to_a[4],t.to_a[0])) * (180 / Math::PI)
+			return [xrot, yrot, zrot]
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
 		# This performs the actual transformation
 		# 
 		#----------------------------------------------------------------------------------------#
@@ -317,12 +379,26 @@ module KM_Tools
 			object_position = get_relative_position(selection)
 
 			# Don't trust sketchup's built in height, width, depth, using my own
-			dimensions = get_absolute_dimensions(selection)
+			dimensions = get_dimensions(selection, true)
 			origin = Geom::Point3d.new object_position[0], object_position[1], object_position[2]
 
-			xscale = data['width'] / dimensions[0]
-			yscale = data['depth'] / dimensions[1]
-			zscale = data['height'] / dimensions[2]
+			if data['width'] == data['data-width']
+				xscale = 1
+			else
+				xscale = data['width'] / dimensions[0]
+			end
+
+			if data['depth'] == data['data-depth']
+				yscale = 1
+			else
+				yscale = data['depth'] / dimensions[1]
+			end
+
+			if data['height'] == data['data-height']
+				zscale = 1
+			else
+				zscale = data['height'] / dimensions[2]
+			end
 
 			# Scale the object
 			transformation = Geom::Transformation.scaling origin, xscale, yscale, zscale
@@ -332,12 +408,27 @@ module KM_Tools
 			new_x = - object_position[0] + data['x']
 			new_y = - object_position[1] + data['y']
 			new_z = - object_position[2] + data['z']
-
 			vector = Geom::Vector3d.new new_x, new_y, new_z
 
 			# Translate the Object
 			transformation = Geom::Transformation.translation vector
 			selection.transform!(transformation)
+
+			# Rotation
+			x_rads = data['x-rotation'] * (Math::PI / 180)
+			x_vector = Geom::Vector3d.new 1, 0, 0
+			x_rotation = Geom::Transformation.rotation origin, x_vector , -x_rads
+			selection.transform!(x_rotation)
+
+			y_rads = data['y-rotation'] * (Math::PI / 180)
+			y_vector = Geom::Vector3d.new 0, 1, 0
+			y_rotation = Geom::Transformation.rotation origin, y_vector ,y_rads
+			selection.transform!(y_rotation)
+
+			z_rads = data['z-rotation'] * (Math::PI / 180)
+			z_vector = Geom::Vector3d.new 0, 0, 1
+			z_rotation = Geom::Transformation.rotation origin, z_vector , -z_rads
+			selection.transform!(z_rotation)
 		end
 
 		#----------------------------------------------------------------------------------------#
@@ -345,10 +436,13 @@ module KM_Tools
 		# This method turns strings in the input data into numbers
 		# 
 		#----------------------------------------------------------------------------------------#
-		def inch_to_f(data)
+		def clean_data(data)
 			data.each do |key, value|
-				if value.index('"')
-					data["#{key}"] = value.chomp('"').to_f
+				if value.index('&quot;')
+					data["#{key}"] = value.chomp('&quot;').to_f
+				end
+				if value.index('&deg;')
+					data["#{key}"] = value.chomp('&deg;').to_f
 				end
 			end
 			return data
@@ -368,20 +462,6 @@ module KM_Tools
 			copy.explode
 			model.selection.clear
 			model.selection.add entities[-1]
-		end
-
-		#----------------------------------------------------------------------------------------#
-		# 
-		# This method gets object corners
-		# 
-		#----------------------------------------------------------------------------------------#
-		def get_corners(selection)
-			bounds = selection.bounds
-			corners = []
-			for i in 0..7
-				corners[i] = bounds.corner(i)
-			end
-			return corners
 		end
 
 		#----------------------------------------------------------------------------------------#
