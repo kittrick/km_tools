@@ -8,6 +8,9 @@ the `Extensions` settings. Choose `Install Extension` and add the km_tools plugi
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.3.5
+	Finally fixed a huge bug with the copy function!
+	Removed unnecessary icon files.
 ### Version 1.3.4
 	Updated a lot of the math relating to rotations, which are much more stable now. I am still
 	trying to figure out how to get relative dimensions.

@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.3.4
+# Version: 1.3.5
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -40,9 +40,6 @@ module KM_Tools
 		def onSelectionBulkChange(selection)
 			@tool.get_object_info
 		end
-		def onSelectionAdded(selection)
-		 	@tool.get_object_info
-		end
 		def onSelectionCleared(selection)
 		 	@tool.get_object_info
 		end
@@ -60,6 +57,14 @@ module KM_Tools
 
 		def initialize
 			#----------------------------------------------------------------------------------------#
+			# Event Listeners
+			#----------------------------------------------------------------------------------------#
+			updateObserver = ModelUpdate.new(self)
+		    Sketchup.active_model.add_observer(updateObserver)
+		    selectionObserver = SelectionUpdate.new(self)
+    		Sketchup.active_model.selection.add_observer(selectionObserver)
+
+			#----------------------------------------------------------------------------------------#
 			# Menu Window Commands
 			#----------------------------------------------------------------------------------------#
 			ui_menu = UI.menu('Window').add_submenu('KM_Tools')
@@ -74,6 +79,7 @@ module KM_Tools
 			command1.menu_text = 'Entity Dimensions'
 			ui_toolbar.add_item(command1)
 			ui_menu.add_item(command1)
+
 			#----------------------------------------------------------------------------------------#
 			# Create the WebDialog instance
 			@@info_window_open = false
@@ -113,36 +119,23 @@ module KM_Tools
 								data[key] = data_diff[key].to_f
 							end
 						end
-						perform_transformation(data)
+						perform_transformation(Sketchup.active_model.selection.first, data)
 						get_object_info
 					Sketchup.active_model.commit_operation
 				# Duplicate Command
 				elsif data['command'] == 'copy'
 					Sketchup.active_model.start_operation('copy & transform', 'true')
-						prompts = ["How many copies? "]
- 						defaults = ["1"]
- 						input = UI.inputbox(prompts, defaults, "Copy selected entity.")
+ 						input = UI.inputbox(["How many copies? boop."], ["1"], "Copy selected entity.")
  						if(input)
- 							for i in 1..(input[0].to_i)
- 								copy_selected_object()
- 								perform_transformation(data)
- 								data.each do |key, value|
-									data[key] = value.to_f + data_diff[key].to_f
- 								end
- 							end
+							copy_and_transform(Sketchup.active_model.selection.first, input[0].to_i, data, data_diff)
 							get_object_info
 						end
-					Sketchup.active_model .commit_operation
+					Sketchup.active_model.commit_operation
 				# Reset Command
 				elsif data['command'] == 'reset'
 					get_object_info
 				end
 			end
-			updateObserver = ModelUpdate.new(self)
-		    Sketchup.active_model.add_observer(updateObserver)
-		    selectionObserver = SelectionUpdate.new(self)
-    		Sketchup.active_model.selection.add_observer(selectionObserver)
-
 		end #initialize
 
 		#----------------------------------------------------------------------------------------#
@@ -263,7 +256,6 @@ module KM_Tools
 				}
 				@@my_dialog.set_html(html)
 			end
-
 		end #get_object_info
 
 		#----------------------------------------------------------------------------------------#
@@ -313,23 +305,6 @@ module KM_Tools
 			else
 				bounds = selection.bounds
 			end
-
-			#----------------------------------------------------------------------------------------#
-			# 
-			# EXPERIMENTAL COOOODDDDEEEEE
-			# 
-			#----------------------------------------------------------------------------------------#
-
-			# rotaiton = get_rotation(selection)
-			# origin = selection.transformation.origin
-			# corners = new_corners
-
-			#----------------------------------------------------------------------------------------#
-			# 
-			# END EXPERIMENTAL CODDDDEEEE
-			# 
-			#----------------------------------------------------------------------------------------#
-
 			for i in 0..7
 				corners[i] = bounds.corner(i)
 			end
@@ -362,10 +337,25 @@ module KM_Tools
 		#----------------------------------------------------------------------------------------#
 		def get_rotation(selection)
 			t = selection.transformation
-			xrot = (Math.atan2(t.to_a[9],t.to_a[10])) * (180 / Math::PI)
-  			yrot = (Math.asin(t.to_a[8])) * (180 / Math::PI)
-  			zrot = (Math.atan2(t.to_a[4],t.to_a[0])) * (180 / Math::PI)
-			return [xrot, yrot, zrot]
+			b = [t.xaxis.to_a, t.yaxis.to_a, t.zaxis.to_a]
+			m = b.transpose.flatten!
+			if m[6] != 1 and m[6] != -1
+				ry = -Math.asin(m[6])
+				rx = Math.atan2(m[7]/Math.cos(ry),m[8]/Math.cos(ry))
+				rz = Math.atan2(m[3]/Math.cos(ry),m[0]/Math.cos(ry))
+			else
+				rz = 0
+				phipos = Math.atan2(m[1],m[2])
+				phineg = Math.atan2(-m[1],-m[2])
+				if m[6] == -1
+					ry = Math::PI/2
+					rx = rz + phipos
+				else
+					ry = -Math::PI/2
+					rx = -rz + phineg
+				end
+			end   
+			return [-rx.radians,ry.radians, -rz.radians]
 		end
 
 		#----------------------------------------------------------------------------------------#
@@ -373,9 +363,8 @@ module KM_Tools
 		# This performs the actual transformation
 		# 
 		#----------------------------------------------------------------------------------------#
-		def perform_transformation(data)
+		def perform_transformation(selection, data)
 			# Get Location Data
-			selection = Sketchup.active_model.selection.first
 			object_position = get_relative_position(selection)
 
 			# Don't trust sketchup's built in height, width, depth, using my own
@@ -433,6 +422,40 @@ module KM_Tools
 
 		#----------------------------------------------------------------------------------------#
 		# 
+		# Copies the selected object and then selects it
+		# 
+		#----------------------------------------------------------------------------------------#
+		def copy_and_transform(copy, copies, data, data_diff)
+			# Create a nice for loop
+			i = 1
+			for i in i..copies do
+				# Copy the object
+				group = Sketchup.active_model.entities.add_group copy
+				copy = group.copy
+
+				# Move Object
+				vector = Geom::Vector3d.new 0, 0, 12
+				move_on_z = Geom::Transformation.translation vector
+				copy.transform! move_on_z
+
+				# Transform new Copy
+				perform_transformation(copy, data)
+				
+				# Explode Extra Groups
+				copy = copy.explode
+				group.explode
+
+				# Update Data
+				data_diff.each do |key, value|
+					unless key.index "rotation"
+						data[key] += data_diff[key]
+					end
+				end
+			end
+		end
+
+		#----------------------------------------------------------------------------------------#
+		# 
 		# This method turns strings in the input data into numbers
 		# 
 		#----------------------------------------------------------------------------------------#
@@ -446,22 +469,6 @@ module KM_Tools
 				end
 			end
 			return data
-		end
-
-		#----------------------------------------------------------------------------------------#
-		# 
-		# Copies the selected object and then selects it
-		# 
-		#----------------------------------------------------------------------------------------#
-		def copy_selected_object()
-			model = Sketchup.active_model
-			entities = model.active_entities
-			group = entities.add_group Sketchup.active_model.active_entities.first
-			copy = group.copy
-			group.explode
-			copy.explode
-			model.selection.clear
-			model.selection.add entities[-1]
 		end
 
 		#----------------------------------------------------------------------------------------#
