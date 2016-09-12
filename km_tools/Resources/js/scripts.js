@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------
 // 
-// Version: 1.3.5
+// Version: 1.3.6
 // Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 // 
 //----------------------------------------------------------------------------------------
@@ -61,31 +61,41 @@ function applyCopy(event){
 function formatUnit(event){
   value = this.value;
   if(this.id.indexOf("rotation") > 0){
-    var reg = new RegExp('^((\-)?([0-9]+)?(\.)?([0-9]+)?(\°)?)$')
+    var reg = new RegExp('^([\\.\\-\+\(\)\*\/\°\ ]|[0-9])+$')
     if(!reg.test(value)){
       name = this.getAttribute("name");
       this.value = this.getAttribute("data-" + name);
-    } else {
-      if(value.indexOf("°") < 1){
-        this.value = value + "°"; 
-      }
+    } else if(value.length > 0){
+      value = value.replace(/°/g,"");
+      value = eval(value);
+      this.value = value + "°"; 
     }
   } else {
-    var reg = new RegExp('^((\-)?([0-9]+)?(\.)?([0-9]+)?(\"|\')?)$');
+    var reg = new RegExp('^([\\.\\-\+\(\)\*\'\"\/\ ]|[0-9])+$');
     if(!reg.test(value)){
       name = this.getAttribute("name");
-      this.value = this.getAttribute("data-" + name);
-    } else {
-      if(value.indexOf("'") > 0){
-        value = value.substring(0, value.length - 1);
-        value = parseFloat(value);
-        value = value * 12;
-        value = value + "\"";
-        this.value = value;
-      }
-      if(value.indexOf("\"") < 1){
-        this.value = value + "\"";  
-      }
+      value = this.getAttribute("data-" + name);
+    } else if(value.length > 0){
+        // Replace all foot inch notes with an extra plus sign
+        var footInch = new RegExp(/\'([0-9]|[\\.])/g);
+        value = value.replace(footInch,"'+$1");
+
+        // Remove all inch marks
+        value = value.replace(/"/g,"");
+
+        // Find all foot marks and multiply that number by 12
+        var reg = new RegExp(/([0-9][\\.]?)+[\']/g);
+        value = value.replace(reg, function(m, v){
+          console.log(m);
+          m = m.replace("\'",'');
+          m = 12 * m;
+          return m;
+        });
+        
+        // Replace with evaluated solution
+        value = eval(value);
+        console.log(value)
+        this.value = value + "\"";
     }
   }
 }
