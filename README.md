@@ -8,6 +8,8 @@ the `Extensions` settings. Choose `Install Extension` and add the km_tools plugi
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.3.7
+	Removed global variables so I can add this extension to the Extension Warehouse.
 ### Version 1.3.6
 	Added math evaluation to input fields, making quick math much easier!
 ### Version 1.3.5

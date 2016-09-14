@@ -2,7 +2,7 @@
 ### Credits:
 # Developed by Kit MacAllister
 #
-### Version: 1.3.6
+### Version: 1.3.7
 #
 ### License:
 # Copyright (c) 2016 Kit MacAllister
@@ -32,9 +32,9 @@ require 'extensions.rb'
 module KM_Tools
 
 	name = 'KM_Tools'
-	version = '1.3.6'
-	$KM_folder = 'km_tools'
-	sdate = '09/12/2016'
+	version = '1.3.7'
+	km_folder = 'km_tools'
+	sdate = '09/14/2016'
 	creator = 'Kit MacAllister'
 	description = 'Assorted Sketchup Tools Created by Kit MacAllister'
 
@@ -42,7 +42,7 @@ module KM_Tools
 	file__ = file__.force_encoding('UTF-8') if defined?(Encoding)
 	file__ = file__.gsub(/\\/, '/')
 
-	path = File.join(File.dirname(file__), $KM_folder, "km_main.rb") 
+	path = File.join(File.dirname(file__), km_folder, "km_main.rb") 
 	ext = SketchupExtension.new('KM_Tools', path) 
 	ext.creator = creator 
 	ext.version = version + ' - ' + sdate 

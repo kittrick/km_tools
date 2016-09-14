@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.3.6
+# Version: 1.3.7
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -506,11 +506,11 @@ module KM_Tools
 		def get_file(file, type = '')
 			case type
 				when 'html'
-					return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/html/")
+					return Sketchup.find_support_file(file, "Plugins/#{km_folder}/Resources/html/")
 				when 'image'
-					return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/Resources/images/")
+					return Sketchup.find_support_file(file, "Plugins/#{km_folder}/Resources/images/")
 				else
-					return Sketchup.find_support_file(file, "Plugins/#{$KM_folder}/")
+					return Sketchup.find_support_file(file, "Plugins/#{km_folder}/")
 			end
 		end #get_file
 		
