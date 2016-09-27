@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------#
 # 
-# Version: 1.3.8
+# Version: 1.3.9
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
 #----------------------------------------------------------------------------------------#
@@ -53,7 +53,7 @@ module KM_Tools
 	class Dimension_Tool
 		
 		@@info_window_open = false
-		@@my_dialog = UI::WebDialog.new('Entity Dimensions', false, 'Selection Info', 240, 280, 200, 200, false)
+		@@my_dialog = UI::WebDialog.new('Entity Dimensions', false, 'Selection Info', 275, 300, 300, 300, false)
 
 		def initialize
 			#----------------------------------------------------------------------------------------#
@@ -200,20 +200,26 @@ module KM_Tools
 					unit_length = Sketchup.active_model.options["UnitsOptions"]["LengthPrecision"]
 
 					# Get Bounding Box Dimensions
+					html += '<section id="size">'
 					html += html_input('width',"%.#{unit_length}f\"" % absolute_dims[0])
 					html += html_input('depth',"%.#{unit_length}f\"" % absolute_dims[1])
 					html += html_input('height',"%.#{unit_length}f\"" % absolute_dims[2])
+					html += '</section>'
 
 					# Groups
 					if (selection.typename == 'Group') || (selection.typename == 'ComponentInstance')
 						# Position
+						html += '<section id="position">'
 						html += html_input('x',"%.#{unit_length}f\"" % relative_pos[0])
 						html += html_input('y',"%.#{unit_length}f\"" % relative_pos[1])
 						html += html_input('z',"%.#{unit_length}f\"" % relative_pos[2])
+						html += '</section>'
 						# Rotation
-						html += html_input('x-rotation',"%.#{unit_length}f°" % rotation[0])
-						html += html_input('y-rotation',"%.#{unit_length}f°" % rotation[1])
-						html += html_input('z-rotation',"%.#{unit_length}f°" % rotation[2])
+						html += '<section id="rotation">'
+						html += html_input('x_rotation',"%.#{unit_length}f°" % rotation[0])
+						html += html_input('y_rotation',"%.#{unit_length}f°" % rotation[1])
+						html += html_input('z_rotation',"%.#{unit_length}f°" % rotation[2])
+						html += '</section>'
 					end
 
 					# Action Buttons
@@ -406,17 +412,17 @@ module KM_Tools
 			selection.transform!(transformation)
 
 			# Rotation
-			x_rads = data['x-rotation'] * (Math::PI / 180)
+			x_rads = data['x_rotation'] * (Math::PI / 180)
 			x_vector = Geom::Vector3d.new 1, 0, 0
 			x_rotation = Geom::Transformation.rotation origin, x_vector , -x_rads
 			selection.transform!(x_rotation)
 
-			y_rads = data['y-rotation'] * (Math::PI / 180)
+			y_rads = data['y_rotation'] * (Math::PI / 180)
 			y_vector = Geom::Vector3d.new 0, 1, 0
 			y_rotation = Geom::Transformation.rotation origin, y_vector ,y_rads
 			selection.transform!(y_rotation)
 
-			z_rads = data['z-rotation'] * (Math::PI / 180)
+			z_rads = data['z_rotation'] * (Math::PI / 180)
 			z_vector = Geom::Vector3d.new 0, 0, 1
 			z_rotation = Geom::Transformation.rotation origin, z_vector , -z_rads
 			selection.transform!(z_rotation)
@@ -492,6 +498,7 @@ module KM_Tools
 				html = %Q{
 					<label for="#{name}">#{name.capitalize}:</label>
 					<input name="#{name}" id="#{name}" value="#{value}" data-#{name}="#{value}"/>
+					<input name="link_#{name}" id="link_#{name}" type="checkbox" value="link_#{name}" data-link_#{name}="">
 				}
 				return html
 			else

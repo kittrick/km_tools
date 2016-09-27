@@ -1,9 +1,9 @@
-<!----------------------------------------------------------------------------------------
+<!________________________________________________________________________________________
 # 
-# Version: 1.3.8
+# Version: 1.3.9
 # Copyright (c) Kit MacAllister 2016, MIT Open Source License. See README.md file for details.
 # 
-#---------------------------------------------------------------------------------------->
+#________________________________________________________________________________________>
 <!html lang="en">
 	<head>
 		<title>Entity Dimensions</title>
@@ -13,24 +13,39 @@
 	<body class="entity_dimensions">
 		<h1 id="name" data-name="">Entity Name</h1>
 		<form name="info_form" id="info_form">
-			<label for="width">Width:</label>
-			<input name="width" id="width" value="" data-width="">
-			<label for="depth" >Depth:</label>
-			<input name="depth" id="depth" value="" data-depth="">
-			<label for="height">Height:</label>
-			<input name="height" id="height" value="" data-height="">
-			<label for="x">X Position:</label>
-			<input name="x" id="x" value="" data-x="">
-			<label for="y">Y Position:</label>
-			<input name="y" id="y" value="" data-y="">
-			<label for="z">Z Position:</label>
-			<input name="z" id="z" value="" data-z="">
-			<label for="x-rotation">X Rotation:</label>
-			<input name="x-rotation" id="x-rotation" value="" data-x-rotation="">
-			<label for="y-rotation">Y Rotation:</label>
-			<input name="y-rotation" id="y-rotation" value="" data-y-rotation="">
-			<label for="z-rotation">Z Rotation:</label>
-			<input name="z-rotation" id="z-rotation" value="" data-z-rotation="">
+			<section id="size">
+				<label for="width">Width:</label>
+				<input name="width" id="width" value="" data-width="">
+				<input name="link_width" id="link_width" type="checkbox" value="link_width" data-link_width="">
+				<label for="depth" >Depth:</label>
+				<input name="depth" id="depth" value="" data-depth="">
+				<input name="link_depth" id="link_depth" type="checkbox" value="link_depth" data-link_depth="">
+				<label for="height">Height:</label>
+				<input name="height" id="height" value="" data-height="">
+				<input name="link_height" id="link_height" type="checkbox" value="link_height" data-link_height="">
+			</section>
+			<section id="position">
+				<label for="x">X Position:</label>
+				<input name="x" id="x" value="" data-x="">
+				<input name="link_x" id="link_x" type="checkbox" value="link_x" data-link_x="">
+				<label for="y">Y Position:</label>
+				<input name="y" id="y" value="" data-y="">
+				<input name="link_y" id="link_y" type="checkbox" value="link_y" data-link_y="">
+				<label for="z">Z Position:</label>
+				<input name="z" id="z" value="" data-z="">
+				<input name="link_z" id="link_z" type="checkbox" value="link_z" data-link_z="">
+			</section>
+			<section id="rotation">
+				<label for="x_rotation">X Rotation:</label>
+				<input name="x_rotation" id="x_rotation" value="" data-x_rotation="">
+				<input name="link_x_rotation" id="link_x_rotation" type="checkbox" value="link_x_rotation" data-link_x_rotation="">
+				<label for="y_rotation">Y Rotation:</label>
+				<input name="y_rotation" id="y_rotation" value="" data-y_rotation="">
+				<input name="link_y_rotation" id="link_y_rotation" type="checkbox" value="link_y_rotation" data-link_y_rotation="">
+				<label for="z_rotation">Z Rotation:</label>
+				<input name="z_rotation" id="z_rotation" value="" data-z_rotation="">
+				<input name="link_z_rotation" id="link_z_rotation" type="checkbox" value="link_z_rotation" data-link_z_rotation="">
+			</section>
 			<button name="reset" id="reset">Reset</button>
 			<button name="copy" id="copy">Copy</button>
 			<button name="apply" type="submit" id="apply">Apply</button>

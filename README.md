@@ -8,6 +8,10 @@ the `Extensions` settings. Choose `Install Extension` and add the km_tools plugi
 This plugin is in active development and has only been tested on a Mac. Use at your own discretion!
 
 ## History
+### Version 1.3.9
+	Added a key missing feature! The ability to constrain proportions when scaling!
+	Currently the rotate and translate portions constrain based on the difference of the values
+	while the scale function constrains based on the proportions, hopefully this is useful!
 ### Version 1.3.8
 	Fixed a bug with missing variable caused by the last update.
 ### Version 1.3.7
